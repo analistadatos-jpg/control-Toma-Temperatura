@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- SheetJS CDN para lectura de Excel -->
+    <!-- SheetJS CDN para lectura y modificación de Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <script>
@@ -38,9 +38,7 @@
     </script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; }
-        .pulse-red {
-            animation: pulse-red 2s infinite;
-        }
+        .pulse-red { animation: pulse-red 2s infinite; }
         @keyframes pulse-red {
             0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
             70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
@@ -54,7 +52,6 @@
     <header class="bg-slate-900 text-white shadow-md border-b border-slate-700">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
             <div class="flex items-center space-x-4">
-                <!-- LOGO MENNAR OFICIAL INCRUSTADO -->
                 <div class="flex items-center justify-center bg-white px-3 py-1 rounded-xl shadow-sm border border-slate-200">
                     <img src="Logo-Mennar.png" alt="Mennar® Operador Logístico Farmacéutico" class="h-10 w-auto object-contain" onerror="this.onerror=null; this.src='https://via.placeholder.com/150x50?text=MENNAR';">
                 </div>
@@ -64,7 +61,7 @@
                 </div>
             </div>
 
-            <!-- Real-time Clock (Sin Simulación) -->
+            <!-- Real-time Clock -->
             <div class="flex items-center bg-slate-800/80 px-4 py-1.5 rounded-lg border border-slate-700">
                 <div class="text-right">
                     <div class="text-xs text-slate-400 font-medium">Reloj del Sistema</div>
@@ -89,7 +86,7 @@
     <!-- Main Container -->
     <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow">
 
-        <!-- VIEW 1: SELECTOR DE PUNTO DE SERVICIO (LOGIN - INICIA VISIBLE) -->
+        <!-- VIEW 1: LOGIN -->
         <section id="loginSection" class="max-w-md mx-auto my-8 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all">
             <div class="bg-slate-900 p-6 text-white text-center border-b border-slate-800">
                 <div class="inline-flex items-center justify-center bg-white p-2.5 rounded-xl mb-3 shadow-md border border-slate-100">
@@ -131,7 +128,7 @@
             </form>
         </section>
 
-        <!-- VIEW 2: DASHBOARD Y FORMULARIO DE REGISTRO (LOGGED IN - INICIA OCULTO) -->
+        <!-- VIEW 2: DASHBOARD Y FORMULARIO -->
         <div id="appDashboard" class="hidden space-y-6">
 
             <!-- Banner informativo de Horarios -->
@@ -202,8 +199,6 @@
                     </div>
 
                     <form id="recordForm" onsubmit="submitReading(event)" class="space-y-4">
-
-                        <!-- Zona / Ubicación -->
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Zona / Ubicación</label>
                             <select id="inputZona" onchange="toggleManualZona()" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 outline-none">
@@ -216,7 +211,6 @@
                             <input type="text" id="inputZonaManual" placeholder="Escriba la zona o ubicación personalizada..." class="hidden mt-2 w-full bg-slate-50 border border-teal-400 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 outline-none">
                         </div>
 
-                        <!-- Temperatura Nevera -->
                         <div>
                             <div class="flex justify-between items-center mb-1">
                                 <label class="text-xs font-semibold text-slate-600">Temp. Nevera (°C)</label>
@@ -228,7 +222,6 @@
                             </div>
                         </div>
 
-                        <!-- Temperatura Ambiente -->
                         <div>
                             <div class="flex justify-between items-center mb-1">
                                 <label class="text-xs font-semibold text-slate-600">Temp. Ambiente (°C)</label>
@@ -240,7 +233,6 @@
                             </div>
                         </div>
 
-                        <!-- Humedad Relativa -->
                         <div>
                             <div class="flex justify-between items-center mb-1">
                                 <label class="text-xs font-semibold text-slate-600">Humedad Relativa (%)</label>
@@ -252,7 +244,6 @@
                             </div>
                         </div>
 
-                        <!-- Verificado -->
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Verificado ✓ (Calidad / Líder)</label>
                             <select id="inputVerificado" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 outline-none">
@@ -261,7 +252,6 @@
                             </select>
                         </div>
 
-                        <!-- Acciones Correctivas -->
                         <div id="correctiveActionGroup" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-lg space-y-1">
                             <label class="block text-xs font-bold text-rose-800 flex items-center gap-1">
                                 <i class="fa-solid fa-triangle-exclamation"></i>
@@ -271,7 +261,6 @@
                             <textarea id="inputAcciones" rows="3" placeholder="Ej: Se ajustó el termostato de la nevera y se notificó al área de mantenimiento/coordinación..." class="w-full bg-white border border-rose-300 rounded-lg p-2 text-xs text-slate-800 focus:ring-2 focus:ring-rose-500 outline-none"></textarea>
                         </div>
 
-                        <!-- Submit Button -->
                         <button type="submit" id="btnSubmitForm" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition text-xs flex items-center justify-center space-x-2">
                             <i class="fa-solid fa-paper-plane"></i>
                             <span>Guardar Registro y Enviar a Drive</span>
@@ -282,7 +271,6 @@
                 <!-- TABLE DISPLAY -->
                 <div class="lg:col-span-8 space-y-4">
 
-                    <!-- Dashboard Controls & Actions -->
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
                         <div class="flex items-center space-x-2">
                             <i class="fa-solid fa-table-list text-teal-600"></i>
@@ -291,7 +279,7 @@
                         <div class="flex items-center space-x-2">
                             <button onclick="exportCSV()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
                                 <i class="fa-solid fa-file-excel"></i>
-                                <span>Exportar Excel/CSV</span>
+                                <span>Exportar Formato Oficial Excel (.xlsx)</span>
                             </button>
                             <button onclick="clearPuntoData()" class="bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium transition" title="Borrar registros locales de este punto">
                                 <i class="fa-solid fa-trash-can"></i>
@@ -299,7 +287,6 @@
                         </div>
                     </div>
 
-                    <!-- Consolidated Spreadsheet Style Table -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse text-xs">
@@ -317,12 +304,10 @@
                                     </tr>
                                 </thead>
                                 <tbody id="recordsTableBody" class="divide-y divide-slate-100 text-slate-700">
-                                    <!-- Dynamic Rows Rendered Here -->
                                 </tbody>
                             </table>
                         </div>
 
-                        <!-- Empty State Notice -->
                         <div id="emptyState" class="p-8 text-center hidden">
                             <div class="inline-flex p-3 bg-slate-100 rounded-full text-slate-400 mb-2">
                                 <i class="fa-regular fa-folder-open text-xl"></i>
@@ -428,8 +413,6 @@
             populatePuntosSelect();
             startLiveClock();
             validateFormInputs();
-            
-            // GARANTIZA INICIO SIEMPRE EN PANTALLA DE LOGIN
             logout(false);
         };
 
@@ -466,19 +449,14 @@
             }
         }
 
-        function getCurrentDateTime() {
-            return new Date();
-        }
+        function getCurrentDateTime() { return new Date(); }
 
         function startLiveClock() {
             setInterval(() => {
                 const now = getCurrentDateTime();
                 const timeString = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
                 document.getElementById('liveClock').innerText = timeString;
-                
-                if (currentUser) {
-                    evaluateScheduleRestrictions();
-                }
+                if (currentUser) evaluateScheduleRestrictions();
             }, 1000);
         }
 
@@ -642,7 +620,6 @@
             const afternoonDeadline = 16 * 60; // 04:00 PM
 
             let changesMade = false;
-
             const todayRecords = allDatabaseRecords.filter(r => r.punto === currentUser.punto && r.fecha === dateStr);
 
             const hasMorning = todayRecords.some(r => r.jornada === 'Mañana');
@@ -863,6 +840,57 @@
             }).join('');
         }
 
+        // CONSTRUCTOR DINÁMICO DE LA PLANTILLA BPD (EF-FO-17, EF-FO-18, EF-FO-19)
+        function generateOfficialWorkbook(filteredRecords, punto, regente) {
+            const wb = XLSX.utils.book_new();
+            const currentMonthName = new Date().toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase();
+
+            const createSheet = (sheetTitle, formCode, equipmentName, valKey) => {
+                const rows = [
+                    ["MENNAR® OPERADOR LOGÍSTICO FARMACÉUTICO", "", "", "", "", "", "", "", "", "", "Código:", formCode],
+                    [sheetTitle, "", "", "", "", "", "", "", "", "", "Versión:", "2.0"],
+                    ["ESTABLECIMIENTO FARMACÉUTICO", "", "", "", "", "", "", "", "", "", "Vigencia:", "01.10.2024"],
+                    [],
+                    ["Mes:", currentMonthName, "", "Dispensario:", punto, "", "", "Equipo:", equipmentName, "", "Código Eq:", "TH-DIGITAL-01"],
+                    ["Responsable:", regente, "", "", "", "", "", "Verificador:", regente, "", "Ubicación:", "Área Dispensación"],
+                    [],
+                    ["Día", "Turno", "Medición Registrada", "Hora", "Zona / Ubicación", "Estado Cumplimiento", "Verificado", "Acciones Correctivas"]
+                ];
+
+                for (let d = 1; d <= 31; d++) {
+                    ["Mañana", "Tarde"].forEach(jornada => {
+                        const rec = filteredRecords.find(r => {
+                            const p = (r.fecha || "").split('/');
+                            return parseInt(p[0], 10) === d && r.jornada === jornada;
+                        });
+
+                        const val = rec ? rec[valKey] : "";
+                        rows.push([
+                            d,
+                            jornada === "Mañana" ? "M" : "T",
+                            typeof val === 'number' ? val : (val || ""),
+                            rec ? rec.hora : "",
+                            rec ? rec.zona : "",
+                            rec ? rec.estadoGeneral : "",
+                            rec ? (rec.verificado || "NO") : "",
+                            rec ? rec.acciones : ""
+                        ]);
+                    });
+                }
+
+                const ws = XLSX.utils.aoa_to_sheet(rows);
+                ws['!cols'] = [{ wch: 6 }, { wch: 6 }, { wch: 20 }, { wch: 12 }, { wch: 30 }, { wch: 18 }, { wch: 12 }, { wch: 45 }];
+                return ws;
+            };
+
+            XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE TEMPERATURA AMBIENTE', 'EF-FO-17', 'Termohigrómetro Digital', 'tempAmbiente'), 'EF-FO-17. TEMPERATURA');
+            XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE HUMEDAD RELATIVA', 'EF-FO-18', 'Termohigrómetro Digital', 'humedad'), 'EF-FO-18. HUMEDAD');
+            XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE CADENA DE FRÍO (NEVERA)', 'EF-FO-19', 'Termómetro Nevera', 'tempNevera'), 'EF-FO-19. CADENA DE FRÍO');
+
+            return wb;
+        }
+
+        // EXPORTACIÓN AUTÓNOMA E INMEDIATA
         function exportCSV() {
             const filteredRecords = allDatabaseRecords.filter(r => r.punto === currentUser.punto);
             if (filteredRecords.length === 0) {
@@ -870,37 +898,18 @@
                 return;
             }
 
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "ID,Punto,Regente,Fecha,Hora,Jornada,Zona,Temp_Nevera_C,Temp_Ambiente_C,Humedad_Relativa_Pct,Estado_General,Verificado,Acciones_Correctivas\n";
+            try {
+                const workbook = generateOfficialWorkbook(filteredRecords, currentUser.punto, currentUser.regente);
+                const cleanPunto = currentUser.punto.replace(/[^a-zA-Z0-9]/g, '_');
+                const fileName = `EF-FO-17,18,19_Control_TH_${cleanPunto}.xlsx`;
 
-            filteredRecords.forEach(r => {
-                const row = [
-                    r.id,
-                    `"${r.punto}"`,
-                    `"${r.regente}"`,
-                    r.fecha,
-                    r.hora,
-                    r.jornada,
-                    `"${r.zona}"`,
-                    r.tempNevera,
-                    r.tempAmbiente,
-                    r.humedad,
-                    r.estadoGeneral,
-                    r.verificado || 'NO',
-                    `"${r.acciones.replace(/"/g, '""')}"`
-                ].join(",");
-                csvContent += row + "\n";
-            });
+                XLSX.writeFile(workbook, fileName);
+                showToast('Exportación Exitosa', 'El archivo Excel con sus 3 pestañas BPD oficiales se ha generado y descargado.');
 
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Consolidado_Temp_Hum_${currentUser.punto.replace(/\s+/g, '_')}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-
-            showToast('Exportación Exitosa', 'El archivo CSV ha sido generado correctamente.');
+            } catch (err) {
+                console.error("Error en la descarga de Excel:", err);
+                showToast('Error de Exportación', 'Ocurrió una novedad al generar el archivo.', 'error');
+            }
         }
 
         function clearPuntoData() {
