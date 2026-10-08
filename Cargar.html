@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consolidado de Temperatura y Humedad - Mennar Farmacéutica</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SheetJS CDN para lectura de Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#16a34a',
+                            600: '#15803d',
+                            700: '#15803d',
+                            800: '#166534',
+                            navy: '#0f2942',
+                            teal: '#00878a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; }
+        .pulse-red {
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- Top Bar Header -->
+    <header class="bg-slate-900 text-white shadow-md border-b border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-4">
+                <!-- LOGO MENNAR OFICIAL INCRUSTADO -->
+                <div class="flex items-center justify-center bg-white px-3 py-1 rounded-xl shadow-sm border border-slate-200">
+                    <img src="Logo-Mennar.png" alt="Mennar® Operador Logístico Farmacéutico" class="h-10 w-auto object-contain" onerror="this.onerror=null; this.src='https://via.placeholder.com/150x50?text=MENNAR';">
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Gestión de Calidad</p>
+                    <p class="text-xs text-slate-300">Control de Temperatura y Humedad (BPD)</p>
+                </div>
+            </div>
+
+            <!-- Real-time Clock (Sin Simulación) -->
+            <div class="flex items-center bg-slate-800/80 px-4 py-1.5 rounded-lg border border-slate-700">
+                <div class="text-right">
+                    <div class="text-xs text-slate-400 font-medium">Reloj del Sistema</div>
+                    <div id="liveClock" class="font-mono text-sm font-semibold text-emerald-400">00:00:00 AM</div>
+                </div>
+            </div>
+
+            <!-- Current User Info & Logout -->
+            <div id="userInfoHeader" class="hidden flex items-center space-x-3">
+                <div class="text-right">
+                    <div id="userPuntoDisplay" class="text-xs font-bold text-teal-300">PUNTO NO SELECCIONADO</div>
+                    <div id="userRegenteDisplay" class="text-xs text-slate-400">Regente de Farmacia</div>
+                </div>
+                <button onclick="logout()" class="bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-400 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-700 transition flex items-center space-x-1">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Cambiar Punto</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow">
+
+        <!-- VIEW 1: SELECTOR DE PUNTO DE SERVICIO (LOGIN - INICIA VISIBLE) -->
+        <section id="loginSection" class="max-w-md mx-auto my-8 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all">
+            <div class="bg-slate-900 p-6 text-white text-center border-b border-slate-800">
+                <div class="inline-flex items-center justify-center bg-white p-2.5 rounded-xl mb-3 shadow-md border border-slate-100">
+                    <img src="Logo-Mennar.png" alt="Mennar® Operador Logístico Farmacéutico" class="h-12 w-auto object-contain" onerror="this.onerror=null; this.src='https://via.placeholder.com/150x50?text=MENNAR';">
+                </div>
+                <h2 class="text-xl font-bold">Ingreso a Establecimiento</h2>
+                <p class="text-xs text-slate-400 mt-1">Seleccione su Punto de Servicio asignado para acceder a los registros exclusivos de su sede.</p>
+            </div>
+
+            <form id="loginForm" onsubmit="loginUser(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Punto de Servicio / Municipio</label>
+                    <select id="puntoSelect" onchange="autoFillRegente()" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none">
+                        <option value="" disabled selected>-- Seleccione su establecimiento --</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Responsable / Regente del Registro</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <i class="fa-regular fa-user"></i>
+                        </span>
+                        <input type="text" id="regenteInput" placeholder="Nombre completo del Regente" required class="w-full pl-9 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none">
+                    </div>
+                </div>
+
+                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start space-x-2">
+                    <i class="fa-solid fa-shield-halved text-blue-600 text-sm mt-0.5"></i>
+                    <p class="text-xs text-blue-800 leading-tight">
+                        <strong>Aislamiento de Información:</strong> Cada persona solo tendrá acceso y control sobre los datos remitidos a su sede correspondiente.
+                    </p>
+                </div>
+
+                <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2 text-sm">
+                    <span>Ingresar al Sistema</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+        </section>
+
+        <!-- VIEW 2: DASHBOARD Y FORMULARIO DE REGISTRO (LOGGED IN - INICIA OCULTO) -->
+        <div id="appDashboard" class="hidden space-y-6">
+
+            <!-- Banner informativo de Horarios -->
+            <div id="scheduleBanner" class="p-4 rounded-xl border transition-all flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center space-x-3">
+                    <div id="scheduleIcon" class="w-10 h-10 rounded-full flex items-center justify-center text-lg">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <div>
+                        <h3 id="scheduleTitle" class="font-bold text-sm">Verificando Horario de Registro...</h3>
+                        <p id="scheduleSubtitle" class="text-xs">Frecuencia exigida: Mañana (09:00 - 10:00 AM) | Tarde (03:00 - 04:00 PM)</p>
+                    </div>
+                </div>
+                <div id="scheduleBadge" class="text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
+                    Calculando...
+                </div>
+            </div>
+
+            <!-- Parameters Legend Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nevera (Cadena Frío)</span>
+                        <div class="text-lg font-bold text-slate-800 mt-1">2.0 °C — 8.0 °C</div>
+                        <span class="text-[10px] text-slate-400">Preventivo: 2-3°C / 7-8°C</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-snowflake"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Temp. Ambiente</span>
+                        <div class="text-lg font-bold text-slate-800 mt-1">15.0 °C — 30.0 °C</div>
+                        <span class="text-[10px] text-slate-400">Preventivo: 15-17°C / 28-30°C</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-temperature-three-quarters"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Humedad Relativa</span>
+                        <div class="text-lg font-bold text-slate-800 mt-1">40 % — 75 %</div>
+                        <span class="text-[10px] text-slate-400">Preventivo: 40-45% / 70-75%</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-droplet"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layout Grid: Left Form / Right Table -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- DATA ENTRY FORM -->
+                <div class="lg:col-span-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                        <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-square-plus text-teal-600"></i>
+                            <span>Nuevo Registro de Turno</span>
+                        </h2>
+                        <span id="jornadaAutoBadge" class="text-[11px] font-medium bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full">
+                            Detectando...
+                        </span>
+                    </div>
+
+                    <form id="recordForm" onsubmit="submitReading(event)" class="space-y-4">
+
+                        <!-- Zona / Ubicación -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Zona / Ubicación</label>
+                            <select id="inputZona" onchange="toggleManualZona()" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 outline-none">
+                                <option value="Área de Dispensación Principal">Área de Dispensación Principal</option>
+                                <option value="Bodega / Almacenamiento">Bodega / Almacenamiento</option>
+                                <option value="Recepción Técnica">Recepción Técnica</option>
+                                <option value="Cuarto Frío / Nevera Medicamentos">Cuarto Frío / Nevera Medicamentos</option>
+                                <option value="OTRO">✏️ Otro / Escribir manualmente...</option>
+                            </select>
+                            <input type="text" id="inputZonaManual" placeholder="Escriba la zona o ubicación personalizada..." class="hidden mt-2 w-full bg-slate-50 border border-teal-400 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 outline-none">
+                        </div>
+
+                        <!-- Temperatura Nevera -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold text-slate-600">Temp. Nevera (°C)</label>
+                                <span id="statusNevera" class="text-[10px] font-bold px-2 py-0.5 rounded">Rango 2-8°C</span>
+                            </div>
+                            <div class="relative">
+                                <input type="number" step="0.1" id="inputTempNevera" placeholder="Ej: 4.5" oninput="validateFormInputs()" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                                <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">°C</span>
+                            </div>
+                        </div>
+
+                        <!-- Temperatura Ambiente -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold text-slate-600">Temp. Ambiente (°C)</label>
+                                <span id="statusAmbiente" class="text-[10px] font-bold px-2 py-0.5 rounded">Rango 15-30°C</span>
+                            </div>
+                            <div class="relative">
+                                <input type="number" step="0.1" id="inputTempAmbiente" placeholder="Ej: 22.0" oninput="validateFormInputs()" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                                <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">°C</span>
+                            </div>
+                        </div>
+
+                        <!-- Humedad Relativa -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-semibold text-slate-600">Humedad Relativa (%)</label>
+                                <span id="statusHumedad" class="text-[10px] font-bold px-2 py-0.5 rounded">Rango 40-75%</span>
+                            </div>
+                            <div class="relative">
+                                <input type="number" step="1" id="inputHumedad" placeholder="Ej: 55" oninput="validateFormInputs()" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                                <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">%</span>
+                            </div>
+                        </div>
+
+                        <!-- Verificado -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Verificado ✓ (Calidad / Líder)</label>
+                            <select id="inputVerificado" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 outline-none">
+                                <option value="SÍ">SÍ</option>
+                                <option value="NO" selected>NO</option>
+                            </select>
+                        </div>
+
+                        <!-- Acciones Correctivas -->
+                        <div id="correctiveActionGroup" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-lg space-y-1">
+                            <label class="block text-xs font-bold text-rose-800 flex items-center gap-1">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                <span>Acciones Correctivas (Obligatorio por Alerta Crítica)</span>
+                            </label>
+                            <p class="text-[11px] text-rose-600">Se detectó una desviación fuera de rango. Describa la acción preventiva o correctiva ejecutada inmediatamente.</p>
+                            <textarea id="inputAcciones" rows="3" placeholder="Ej: Se ajustó el termostato de la nevera y se notificó al área de mantenimiento/coordinación..." class="w-full bg-white border border-rose-300 rounded-lg p-2 text-xs text-slate-800 focus:ring-2 focus:ring-rose-500 outline-none"></textarea>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="btnSubmitForm" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition text-xs flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Guardar Registro y Enviar a Drive</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- TABLE DISPLAY -->
+                <div class="lg:col-span-8 space-y-4">
+
+                    <!-- Dashboard Controls & Actions -->
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-table-list text-teal-600"></i>
+                            <h2 class="font-bold text-slate-800 text-sm">Histórico del Punto: <span id="currentPuntoTitle" class="text-teal-700">---</span></h2>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="exportCSV()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
+                                <i class="fa-solid fa-file-excel"></i>
+                                <span>Exportar Excel/CSV</span>
+                            </button>
+                            <button onclick="clearPuntoData()" class="bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium transition" title="Borrar registros locales de este punto">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Consolidated Spreadsheet Style Table -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-900 text-slate-200 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-800">
+                                        <th class="p-3">N° / Fecha</th>
+                                        <th class="p-3">Jornada / Hora</th>
+                                        <th class="p-3">Zona</th>
+                                        <th class="p-3 text-center">Nevera (°C)</th>
+                                        <th class="p-3 text-center">Ambiente (°C)</th>
+                                        <th class="p-3 text-center">Humedad (%)</th>
+                                        <th class="p-3 text-center">Estado General</th>
+                                        <th class="p-3 text-center text-teal-300">Verificado ✓</th>
+                                        <th class="p-3">Acciones Correctivas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recordsTableBody" class="divide-y divide-slate-100 text-slate-700">
+                                    <!-- Dynamic Rows Rendered Here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Empty State Notice -->
+                        <div id="emptyState" class="p-8 text-center hidden">
+                            <div class="inline-flex p-3 bg-slate-100 rounded-full text-slate-400 mb-2">
+                                <i class="fa-regular fa-folder-open text-xl"></i>
+                            </div>
+                            <p class="text-xs font-medium text-slate-500">No hay lecturas registradas para este punto de servicio.</p>
+                            <p class="text-[11px] text-slate-400">Complete el formulario en el horario permitido para ingresar datos.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div>
+                <strong>Mennar® Operador Logístico Farmacéutico</strong> &copy; 2026 - Control de Condiciones de Almacenamiento y Dispensación (BPD)
+            </div>
+            <div class="flex items-center space-x-4 text-[11px]">
+                <span class="text-slate-400">Versión: 01</span>
+                <span class="text-slate-400">Código: GQ-FO-01</span>
+                <span class="text-teal-600 font-semibold">Vigencia: 20/04/2026</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Notification Toast Modal -->
+    <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm w-full bg-slate-900 text-white p-4 rounded-xl shadow-2xl border border-slate-700 flex items-start space-x-3 z-50 pointer-events-none">
+        <div id="toastIcon" class="text-emerald-400 text-lg mt-0.5">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <div class="flex-grow">
+            <h4 id="toastTitle" class="font-bold text-xs">Notificación</h4>
+            <p id="toastMessage" class="text-xs text-slate-300 mt-0.5">Mensaje del sistema.</p>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APP LOGIC -->
+    <script>
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3GKlwkS9raN9tfvKbu0Ny-3t9uG_rZSDA9K4ROS2IUdXfti1L80iqv_W3V-Fwrjca/exec";
+
+        let PUNTOS_BD = JSON.parse(localStorage.getItem('mennar_puntos_custom')) || [
+            { area: "05 DISPENSARIO MENNAR 1", municipio: "POPAYAN", regente: "PIAMBA POTOSI MARIA ALEXANDRA", nit: "1063813534" },
+            { area: "06 DISPENSARIO MENNAR 2", municipio: "POPAYAN", regente: "URREA HERRERA SANDRA LILIANA", nit: "34326227" },
+            { area: "08 DISPENSARIO MENNAR 4", municipio: "POPAYAN", regente: "HERRERA ARIAS JULIAN", nit: "76326058" },
+            { area: "09 DISPENSARIO MENNAR 5", municipio: "POPAYAN", regente: "MAMIAN NARVAEZ NATALY", nit: "1061707396" },
+            { area: "10 DISPENSARIO MENNAR MERCADERES 1", municipio: "MERCADERES", regente: "MAMIAN MUÑOZ MELISA", nit: "1061019949" },
+            { area: "12 DISPENSARIO MENNAR PATIA 1", municipio: "PATIA", regente: "CAICEDO CAICEDO MAR LUCY", nit: "1059904243" },
+            { area: "13 DISPENSARIO MENNAR TIMBIO 1", municipio: "TIMBIO", regente: "DIAZ BURBANO CAROL JULIETH", nit: "1063806616" },
+            { area: "14 DISPENSARIO MENNAR MIRANDA 1", municipio: "MIRANDA", regente: "PENAGOS VELASCO DIANA MARCELA", nit: "1059065344" },
+            { area: "15 DISPENSARIO MENNAR BOLIVAR 1", municipio: "BOLIVAR", regente: "GOMEZ ILES ILSA YAMILETH", nit: "1058976209" },
+            { area: "16 DISPENSARIO MENNAR PUERTO TEJADA 1", municipio: "TEJADA", regente: "MINA BARONA JENNY PATRICIA", nit: "34374552" },
+            { area: "17 DISPENSARIO MENNAR SANTANDER DE QUILICHAO 1", municipio: "QUILICHAO", regente: "MARTINEZ MINA GLEYDIN", nit: "25381870" },
+            { area: "19 DISPENSARIO MENNAR EL TAMBO 1", municipio: "TAMBO", regente: "OLIVEROS PEREZ MILEIDY", nit: "1060878420" },
+            { area: "20 DISPENSARIO MENNAR GUAPI 1", municipio: "GUAPI", regente: "CUERO GRUESO PEDRO PASCUAL", nit: "10386645" },
+            { area: "21 DISPENSARIO MENNAR MORALES 1", municipio: "MORALES", regente: "ZUÑIGA OCAMPO VIVIAN ASTRID", nit: "48575241" },
+            { area: "22 DISPENSARIO MENNAR SOTARA 1", municipio: "SOTARA", regente: "MARTINEZ CORDOBA RODRIGO", nit: "76028613" },
+            { area: "23 DISPENSARIO MENNAR CORINTO 1", municipio: "CORINTO", regente: "GIRONZA BONILLA GUSTAVO ADOLFO", nit: "1130624238" },
+            { area: "24 DISPENSARIO MENNAR LA SIERRA 1", municipio: "SIERRA", regente: "TINTINAGO SOLARTE ANDRES FELIPE", nit: "1058787497" },
+            { area: "25 DISPENSARIO MENNAR CALDONO 1", municipio: "CALDONO", regente: "RAMIREZ VALENCIA LUISA ALEJANDRA", nit: "1061544058" },
+            { area: "27 DISPENSARIO MENNAR ROSAS 1", municipio: "ROSAS", regente: "CABRERA NARVAEZ LEIDY VIVIANA", nit: "1061599203" },
+            { area: "28 DISPENSARIO MENNAR SUAREZ 1", municipio: "SUAREZ", regente: "RODRIGUEZ AGRONO THALIA", nit: "1067467978" },
+            { area: "29 DISPENSARIO MENNAR SILVIA 1", municipio: "SILVIA", regente: "HURTADO CHAVACO GLORIA", nit: "25286831" },
+            { area: "31 DISPENSARIO MENNAR PADILLA 1", municipio: "PADILLA", regente: "MONTOYA MINA NORALBA", nit: "25389805" },
+            { area: "32 DISPENSARIO MENNAR VILLA RICA 1", municipio: "RICA", regente: "LUCUMI HURTADO LADYS YAZMIN", nit: "1114894761" },
+            { area: "33 DISPENSARIO MENNAR ARGELIA 1", municipio: "ARGELIA", regente: "DAZA GARZON ANDRES", nit: "10661783" },
+            { area: "35 DISPENSARIO MENNAR GUACHENE 1", municipio: "GUACHENE", regente: "PALACIOS APONZA YINA XIMENA", nit: "1149684106" },
+            { area: "36 DISPENSARIO MENNAR BALBOA 1", municipio: "BALBOA", regente: "ZUÑIGA SAMBONI CRISTIAN DAVID", nit: "1002836833" },
+            { area: "37 DISPENSARIO MENNAR SUCRE 1", municipio: "SUCRE", regente: "MAMIAN HURTADO LUCELY", nit: "48607002" },
+            { area: "38 DISPENSARIO MENNAR INZA 1", municipio: "INZA", regente: "CHASQUI PENCUE LESVI GIMENA", nit: "25453970" },
+            { area: "39 DISPENSARIO MENNAR ALMAGUER 1", municipio: "ALMAGUER", regente: "PALECHOR QUINAYAZ LUZ ENEIRA", nit: "25483212" },
+            { area: "42 DISPENSARIO MENNAR SAN SEBASTIAN 1", municipio: "SEBASTIAN", regente: "RUIZ GOMEZ MARIBEL", nit: "1065097114" },
+            { area: "43 DISPENSARIO MENNAR FLORENCIA 1", municipio: "FLORENCIA", regente: "SOLARTE CORDOBA EDILBERTO", nit: "10592758" },
+            { area: "44 DISPENSARIO MENNAR PURACE 1", municipio: "PURACE", regente: "NOGUIL ORDOÑEZ BRIGITTE CAROLINA", nit: "1061762245" },
+            { area: "46 DISPENSARIO MENNAR BUENOS AIRES 1", municipio: "AIRES", regente: "ACOSTA MONTAÑO MARIA ISMAELINA", nit: "34501362" },
+            { area: "47 DISPENSARIO MENNAR PIAMONTE 1", municipio: "PIAMONTE", regente: "JIMENEZ GARCIA ERIKA NATALIA", nit: "1117264728" },
+            { area: "48 DISPENSARIO MENNAR JAMBALO 1", municipio: "JAMBALO", regente: "ESCOBAR ORTIZ RUBIEL HOMERO", nit: "10295829" },
+            { area: "49 DISPENSARIO MENNAR TORIBIO 1", municipio: "TORIBIO", regente: "CUETIA TORRES LEYDI DIDIANA", nit: "1062331050" },
+            { area: "50 DISPENSARIO MENNAR TOTORO 1", municipio: "TOTORO", regente: "CASAMACHIN DAGUA KEVIN ENRIQUE", nit: "1061755177" },
+            { area: "17 DISPENSARIO MENNAR CALOTO", municipio: "CALOTO", regente: "AGUDELO ROA DIANA MELISA", nit: "1144068068" },
+            { area: "30 DISPENSARIO MENNAR LA VEGA 1", municipio: "VEGA", regente: "GOMEZ MAMIAN ZULMA", nit: "1060987021" },
+            { area: "41 DISPENSARIO MENNAR SANTA ROSA 1", municipio: "ROSA", regente: "GIRON BAMBAGUE YUDY PAOLA", nit: "1062754501" },
+            { area: "11 DISPENSARIO MENNAR CAJIBIO 1", municipio: "CAJIBIO", regente: "VALENCIA MUÑOZ MAIRA KATERINE", nit: "1002918197" },
+            { area: "40 DISPENSARIO MENNAR PAEZ 1", municipio: "PAEZ", regente: "GUGU COLLO MARIA DANIELA", nit: "1062091515" },
+            { area: "18 DISPENSARIO MENNAR PIENDAMO 1", municipio: "PIENDAMO", regente: "COLLAZOS VELASCO FRANCY ALEXANDRA", nit: "1007178062" },
+            { area: "34 DISPENSARIO MENNAR TIMBIQUI 1", municipio: "TIMBIQUI", regente: "SINISTERRA SOLIS LEONILA", nit: "1064488047" }
+        ];
+
+        let currentUser = null; 
+        let allDatabaseRecords = JSON.parse(localStorage.getItem('mennar_farmacia_records')) || [];
+
+        const RANGES = {
+            nevera:   { min: 2.0, max: 8.0, warnMin: 3.0, warnMax: 7.0 },
+            ambiente: { min: 15.0, max: 30.0, warnMin: 17.0, warnMax: 28.0 },
+            humedad:  { min: 40, max: 75, warnMin: 45, warnMax: 70 }
+        };
+
+        window.onload = function() {
+            populatePuntosSelect();
+            startLiveClock();
+            validateFormInputs();
+            
+            // GARANTIZA INICIO SIEMPRE EN PANTALLA DE LOGIN
+            logout(false);
+        };
+
+        function toggleManualZona() {
+            const select = document.getElementById('inputZona');
+            const manualInput = document.getElementById('inputZonaManual');
+            if (select.value === 'OTRO') {
+                manualInput.classList.remove('hidden');
+                manualInput.required = true;
+                manualInput.focus();
+            } else {
+                manualInput.classList.add('hidden');
+                manualInput.required = false;
+                manualInput.value = '';
+            }
+        }
+
+        function populatePuntosSelect() {
+            const select = document.getElementById('puntoSelect');
+            select.innerHTML = '<option value="" disabled selected>-- Seleccione su establecimiento --</option>';
+            PUNTOS_BD.forEach((item, index) => {
+                const opt = document.createElement('option');
+                opt.value = index;
+                opt.textContent = `${item.area} (${item.municipio})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function autoFillRegente() {
+            const selectIdx = document.getElementById('puntoSelect').value;
+            if (selectIdx !== "") {
+                const selected = PUNTOS_BD[selectIdx];
+                document.getElementById('regenteInput').value = selected.regente;
+            }
+        }
+
+        function getCurrentDateTime() {
+            return new Date();
+        }
+
+        function startLiveClock() {
+            setInterval(() => {
+                const now = getCurrentDateTime();
+                const timeString = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                document.getElementById('liveClock').innerText = timeString;
+                
+                if (currentUser) {
+                    evaluateScheduleRestrictions();
+                }
+            }, 1000);
+        }
+
+        function isWithinAllowedSchedule() {
+            const now = getCurrentDateTime();
+            const minutes = now.getHours() * 60 + now.getMinutes();
+
+            const morningStart = 9 * 60;        // 09:00 AM
+            const morningEnd = 10 * 60;          // 10:00 AM
+            const afternoonStart = 15 * 60;      // 03:00 PM
+            const afternoonEnd = 16 * 60;        // 04:00 PM
+
+            const isMorning = (minutes >= morningStart && minutes <= morningEnd);
+            const isAfternoon = (minutes >= afternoonStart && minutes <= afternoonEnd);
+
+            return {
+                allowed: isMorning || isAfternoon,
+                jornada: isMorning ? 'Mañana' : (isAfternoon ? 'Tarde' : 'Fuera de Horario')
+            };
+        }
+
+        function evaluateScheduleRestrictions() {
+            const scheduleInfo = isWithinAllowedSchedule();
+            const banner = document.getElementById('scheduleBanner');
+            const icon = document.getElementById('scheduleIcon');
+            const title = document.getElementById('scheduleTitle');
+            const badge = document.getElementById('scheduleBadge');
+            const jornadaBadge = document.getElementById('jornadaAutoBadge');
+            const submitBtn = document.getElementById('btnSubmitForm');
+            const inputs = ['inputZona', 'inputZonaManual', 'inputTempNevera', 'inputTempAmbiente', 'inputHumedad', 'inputVerificado', 'inputAcciones'];
+
+            if (scheduleInfo.allowed) {
+                banner.className = 'p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 transition-all flex flex-col md:flex-row items-center justify-between gap-4';
+                icon.className = 'w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg';
+                title.innerText = 'SISTEMA HABILITADO PARA REGISTRO';
+                badge.className = 'text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider bg-emerald-200 text-emerald-800';
+                badge.innerText = `Turno ${scheduleInfo.jornada} Activo`;
+                jornadaBadge.innerText = `Jornada: ${scheduleInfo.jornada}`;
+                jornadaBadge.className = 'text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full';
+
+                inputs.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.disabled = false;
+                });
+                submitBtn.disabled = false;
+                submitBtn.className = 'w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition text-xs flex items-center justify-center space-x-2 cursor-pointer';
+            } else {
+                banner.className = 'p-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-900 transition-all flex flex-col md:flex-row items-center justify-between gap-4 pulse-red';
+                icon.className = 'w-10 h-10 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center text-lg';
+                title.innerText = 'SISTEMA BLOQUEADO: Fuera de Horario Permitido';
+                badge.className = 'text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider bg-rose-200 text-rose-800';
+                badge.innerText = 'Ingreso Inhabilitado';
+                jornadaBadge.innerText = 'Fuera de Rango Horario';
+                jornadaBadge.className = 'text-[11px] font-bold bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full';
+
+                inputs.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.disabled = true;
+                });
+                submitBtn.disabled = true;
+                submitBtn.className = 'w-full bg-slate-300 text-slate-500 font-semibold py-2.5 px-4 rounded-lg text-xs flex items-center justify-center space-x-2 cursor-not-allowed';
+            }
+        }
+
+        function evaluateValue(val, rangeConfig) {
+            if (val === null || val === undefined || isNaN(val)) return { state: 'NEUTRAL', colorClass: 'bg-slate-100 text-slate-600' };
+            if (val < rangeConfig.min || val > rangeConfig.max) {
+                return { state: 'CRITICO', colorClass: 'bg-rose-100 text-rose-700 border border-rose-300', label: 'CRÍTICO' };
+            }
+            if (val <= rangeConfig.warnMin || val >= rangeConfig.warnMax) {
+                return { state: 'PREVENTIVO', colorClass: 'bg-amber-100 text-amber-800 border border-amber-300', label: 'PREVENTIVO' };
+            }
+            return { state: 'CONFORME', colorClass: 'bg-emerald-100 text-emerald-800 border border-emerald-300', label: 'CONFORME' };
+        }
+
+        function validateFormInputs() {
+            const tempNevera = parseFloat(document.getElementById('inputTempNevera').value);
+            const tempAmb = parseFloat(document.getElementById('inputTempAmbiente').value);
+            const humedad = parseFloat(document.getElementById('inputHumedad').value);
+
+            const resNevera = evaluateValue(tempNevera, RANGES.nevera);
+            const resAmb = evaluateValue(tempAmb, RANGES.ambiente);
+            const resHum = evaluateValue(humedad, RANGES.humedad);
+
+            updateStatusBadge('statusNevera', resNevera);
+            updateStatusBadge('statusAmbiente', resAmb);
+            updateStatusBadge('statusHumedad', resHum);
+
+            const correctiveGroup = document.getElementById('correctiveActionGroup');
+            const correctiveInput = document.getElementById('inputAcciones');
+
+            if (resNevera.state === 'CRITICO' || resAmb.state === 'CRITICO' || resHum.state === 'CRITICO') {
+                correctiveGroup.classList.remove('hidden');
+                correctiveInput.required = true;
+            } else {
+                correctiveGroup.classList.add('hidden');
+                correctiveInput.required = false;
+            }
+        }
+
+        function updateStatusBadge(elementId, result) {
+            const badge = document.getElementById(elementId);
+            if (result.state === 'NEUTRAL') {
+                badge.className = 'text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-500';
+                badge.innerText = 'Rango Normal';
+            } else {
+                badge.className = `text-[10px] font-bold px-2 py-0.5 rounded ${result.colorClass}`;
+                badge.innerText = result.label;
+            }
+        }
+
+        function loginUser(e) {
+            e.preventDefault();
+            const selectIdx = document.getElementById('puntoSelect').value;
+            const regente = document.getElementById('regenteInput').value.trim();
+
+            if (selectIdx === "" || !regente) return;
+
+            const selectedObj = PUNTOS_BD[selectIdx];
+            currentUser = { 
+                punto: `${selectedObj.area} (${selectedObj.municipio})`, 
+                municipio: selectedObj.municipio,
+                regente: regente 
+            };
+            localStorage.setItem('mennar_active_user', JSON.stringify(currentUser));
+
+            renderUserView();
+            showToast('Bienvenido', `Conectado a ${currentUser.punto}`);
+        }
+
+        function logout(clearStorage = true) {
+            if (clearStorage) localStorage.removeItem('mennar_active_user');
+            currentUser = null;
+            document.getElementById('loginSection').classList.remove('hidden');
+            document.getElementById('appDashboard').classList.add('hidden');
+            document.getElementById('userInfoHeader').classList.add('hidden');
+        }
+
+        function renderUserView() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('appDashboard').classList.remove('hidden');
+            document.getElementById('userInfoHeader').classList.remove('hidden');
+
+            document.getElementById('userPuntoDisplay').innerText = currentUser.punto;
+            document.getElementById('userRegenteDisplay').innerText = `Regente: ${currentUser.regente}`;
+            document.getElementById('currentPuntoTitle').innerText = currentUser.punto;
+
+            checkAndRecordMissedShifts();
+            evaluateScheduleRestrictions();
+            renderTableRecords();
+        }
+
+        function checkAndRecordMissedShifts() {
+            if (!currentUser) return;
+
+            const now = getCurrentDateTime();
+            const dateStr = now.toLocaleDateString('es-CO');
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+            const morningDeadline = 10 * 60;   // 10:00 AM
+            const afternoonDeadline = 16 * 60; // 04:00 PM
+
+            let changesMade = false;
+
+            const todayRecords = allDatabaseRecords.filter(r => r.punto === currentUser.punto && r.fecha === dateStr);
+
+            const hasMorning = todayRecords.some(r => r.jornada === 'Mañana');
+            const hasAfternoon = todayRecords.some(r => r.jornada === 'Tarde');
+
+            if (currentMinutes > morningDeadline && !hasMorning) {
+                const missedMorningRecord = {
+                    id: Date.now() - 2,
+                    punto: currentUser.punto,
+                    municipio: currentUser.municipio || '',
+                    regente: currentUser.regente,
+                    responsable: currentUser.regente,
+                    fecha: dateStr,
+                    hora: '10:00:00 AM',
+                    jornada: 'Mañana',
+                    zona: 'Sistema (Automático)',
+                    tempNevera: 'N/A',
+                    tempAmbiente: 'N/A',
+                    humedad: 'N/A',
+                    cumpleTemperatura: 'NO',
+                    cumpleHumedad: 'NO',
+                    estadoGeneral: 'NO REALIZADO',
+                    verificado: 'NO',
+                    acciones: 'INCUMPLIMIENTO: Registro de turno Mañana no realizado en ventana obligatoria (09:00 - 10:00 AM).'
+                };
+                allDatabaseRecords.unshift(missedMorningRecord);
+                sendMissedShiftToDrive(missedMorningRecord);
+                changesMade = true;
+            }
+
+            if (currentMinutes > afternoonDeadline && !hasAfternoon) {
+                const missedAfternoonRecord = {
+                    id: Date.now() - 1,
+                    punto: currentUser.punto,
+                    municipio: currentUser.municipio || '',
+                    regente: currentUser.regente,
+                    responsable: currentUser.regente,
+                    fecha: dateStr,
+                    hora: '04:00:00 PM',
+                    jornada: 'Tarde',
+                    zona: 'Sistema (Automático)',
+                    tempNevera: 'N/A',
+                    tempAmbiente: 'N/A',
+                    humedad: 'N/A',
+                    cumpleTemperatura: 'NO',
+                    cumpleHumedad: 'NO',
+                    estadoGeneral: 'NO REALIZADO',
+                    verificado: 'NO',
+                    acciones: 'INCUMPLIMIENTO: Registro de turno Tarde no realizado en ventana obligatoria (03:00 - 04:00 PM).'
+                };
+                allDatabaseRecords.unshift(missedAfternoonRecord);
+                sendMissedShiftToDrive(missedAfternoonRecord);
+                changesMade = true;
+            }
+
+            if (changesMade) {
+                localStorage.setItem('mennar_farmacia_records', JSON.stringify(allDatabaseRecords));
+            }
+        }
+
+        function sendMissedShiftToDrive(record) {
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(record)
+            }).catch(err => console.error("Error reporte automático:", err));
+        }
+
+        function submitReading(e) {
+            e.preventDefault();
+
+            const scheduleInfo = isWithinAllowedSchedule();
+            if (!scheduleInfo.allowed) {
+                showToast('Error de Horario', 'El sistema está bloqueado fuera del horario permitido.', 'error');
+                return;
+            }
+
+            const selectZona = document.getElementById('inputZona').value;
+            const manualZona = document.getElementById('inputZonaManual').value.trim();
+            
+            let zonaFinal = selectZona;
+            if (selectZona === 'OTRO') {
+                if (!manualZona) {
+                    showToast('Campo Requerido', 'Escriba el nombre de la zona personalizada.', 'error');
+                    return;
+                }
+                zonaFinal = manualZona;
+            }
+
+            const now = getCurrentDateTime();
+            const tempNevera = parseFloat(document.getElementById('inputTempNevera').value);
+            const tempAmb = parseFloat(document.getElementById('inputTempAmbiente').value);
+            const humedad = parseFloat(document.getElementById('inputHumedad').value);
+            const verificado = document.getElementById('inputVerificado').value;
+            const acciones = document.getElementById('inputAcciones').value.trim();
+
+            const resNevera = evaluateValue(tempNevera, RANGES.nevera);
+            const resAmb = evaluateValue(tempAmb, RANGES.ambiente);
+            const resHum = evaluateValue(humedad, RANGES.humedad);
+
+            let estadoGeneral = 'CONFORME';
+            if (resNevera.state === 'CRITICO' || resAmb.state === 'CRITICO' || resHum.state === 'CRITICO') {
+                estadoGeneral = 'CRÍTICO';
+            } else if (resNevera.state === 'PREVENTIVO' || resAmb.state === 'PREVENTIVO' || resHum.state === 'PREVENTIVO') {
+                estadoGeneral = 'PREVENTIVO';
+            }
+
+            const payload = {
+                punto: currentUser.punto,
+                municipio: currentUser.municipio || '',
+                regente: currentUser.regente,
+                fecha: now.toLocaleDateString('es-CO'),
+                hora: now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }),
+                jornada: scheduleInfo.jornada,
+                zona: zonaFinal,
+                tempNevera: tempNevera,
+                tempAmbiente: tempAmb,
+                humedad: humedad,
+                estadoGeneral: estadoGeneral,
+                verificado: verificado,
+                acciones: acciones || 'N/A'
+            };
+
+            const newRecord = { ...payload, id: Date.now() };
+            allDatabaseRecords.unshift(newRecord);
+            localStorage.setItem('mennar_farmacia_records', JSON.stringify(allDatabaseRecords));
+
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(() => {
+                showToast('Enviado a Drive', 'Registro remitido exitosamente a Google Sheets.');
+            }).catch(err => {
+                console.error("Error al sincronizar con Drive:", err);
+                showToast('Guardado Local', 'Registro guardado localmente en la app.');
+            });
+
+            document.getElementById('recordForm').reset();
+            toggleManualZona();
+            validateFormInputs();
+            renderTableRecords();
+        }
+
+        function toggleVerificadoRecord(id) {
+            const idx = allDatabaseRecords.findIndex(r => r.id === id);
+            if (idx !== -1) {
+                allDatabaseRecords[idx].verificado = allDatabaseRecords[idx].verificado === 'SÍ' ? 'NO' : 'SÍ';
+                localStorage.setItem('mennar_farmacia_records', JSON.stringify(allDatabaseRecords));
+                renderTableRecords();
+                showToast('Verificación Actualizada', `Estado cambiado a: ${allDatabaseRecords[idx].verificado}`);
+            }
+        }
+
+        function renderTableRecords() {
+            const tableBody = document.getElementById('recordsTableBody');
+            const emptyState = document.getElementById('emptyState');
+
+            const filteredRecords = allDatabaseRecords.filter(r => r.punto === currentUser.punto);
+
+            if (filteredRecords.length === 0) {
+                tableBody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tableBody.innerHTML = filteredRecords.map((r, idx) => {
+                const evalNev = evaluateValue(r.tempNevera, RANGES.nevera);
+                const evalAmb = evaluateValue(r.tempAmbiente, RANGES.ambiente);
+                const evalHum = evaluateValue(r.humedad, RANGES.humedad);
+
+                let badgeGeneral = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                if (r.estadoGeneral === 'PREVENTIVO') badgeGeneral = 'bg-amber-100 text-amber-800 border-amber-300';
+                if (r.estadoGeneral === 'CRÍTICO') badgeGeneral = 'bg-rose-100 text-rose-800 border-rose-300 font-bold';
+                if (r.estadoGeneral === 'NO REALIZADO') badgeGeneral = 'bg-slate-800 text-white font-black border border-slate-900 animate-pulse';
+
+                const badgeVerificado = r.verificado === 'SÍ' 
+                    ? 'bg-teal-100 text-teal-800 border-teal-400 font-bold' 
+                    : 'bg-slate-100 text-slate-500 border-slate-300';
+
+                return `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="p-3">
+                            <div class="font-bold text-slate-800">#${filteredRecords.length - idx}</div>
+                            <div class="text-[10px] text-slate-400">${r.fecha}</div>
+                        </td>
+                        <td class="p-3">
+                            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 mb-0.5">${r.jornada}</span>
+                            <div class="text-[11px] font-mono text-slate-500">${r.hora}</div>
+                        </td>
+                        <td class="p-3 font-medium text-slate-700">${r.zona}</td>
+                        <td class="p-3 text-center">
+                            <span class="inline-block px-2 py-1 rounded font-mono font-bold ${evalNev.colorClass}">${r.tempNevera} °C</span>
+                        </td>
+                        <td class="p-3 text-center">
+                            <span class="inline-block px-2 py-1 rounded font-mono font-bold ${evalAmb.colorClass}">${r.tempAmbiente} °C</span>
+                        </td>
+                        <td class="p-3 text-center">
+                            <span class="inline-block px-2 py-1 rounded font-mono font-bold ${evalHum.colorClass}">${r.humedad} %</span>
+                        </td>
+                        <td class="p-3 text-center">
+                            <span class="inline-block px-2.5 py-1 rounded-full text-[10px] border ${badgeGeneral}">${r.estadoGeneral}</span>
+                        </td>
+                        <td class="p-3 text-center">
+                            <button onclick="toggleVerificadoRecord(${r.id})" title="Haga clic para cambiar estado de verificación" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] border shadow-sm transition hover:scale-105 ${badgeVerificado}">
+                                <span>${r.verificado || 'NO'}</span>
+                                <i class="fa-solid ${r.verificado === 'SÍ' ? 'fa-check text-teal-600' : 'fa-minus text-slate-400'}"></i>
+                            </button>
+                        </td>
+                        <td class="p-3 text-[11px] max-w-xs ${r.acciones !== 'N/A' ? 'text-rose-700 font-medium' : 'text-slate-400 italic'}">
+                            ${r.acciones}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function exportCSV() {
+            const filteredRecords = allDatabaseRecords.filter(r => r.punto === currentUser.punto);
+            if (filteredRecords.length === 0) {
+                showToast('Atención', 'No hay registros para exportar.', 'error');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "ID,Punto,Regente,Fecha,Hora,Jornada,Zona,Temp_Nevera_C,Temp_Ambiente_C,Humedad_Relativa_Pct,Estado_General,Verificado,Acciones_Correctivas\n";
+
+            filteredRecords.forEach(r => {
+                const row = [
+                    r.id,
+                    `"${r.punto}"`,
+                    `"${r.regente}"`,
+                    r.fecha,
+                    r.hora,
+                    r.jornada,
+                    `"${r.zona}"`,
+                    r.tempNevera,
+                    r.tempAmbiente,
+                    r.humedad,
+                    r.estadoGeneral,
+                    r.verificado || 'NO',
+                    `"${r.acciones.replace(/"/g, '""')}"`
+                ].join(",");
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Consolidado_Temp_Hum_${currentUser.punto.replace(/\s+/g, '_')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('Exportación Exitosa', 'El archivo CSV ha sido generado correctamente.');
+        }
+
+        function clearPuntoData() {
+            if (confirm(`¿Está seguro de borrar los registros locales del punto ${currentUser.punto}?`)) {
+                allDatabaseRecords = allDatabaseRecords.filter(r => r.punto !== currentUser.punto);
+                localStorage.setItem('mennar_farmacia_records', JSON.stringify(allDatabaseRecords));
+                renderTableRecords();
+                showToast('Limpieza completada', 'Registros locales de este punto eliminados.');
+            }
+        }
+
+        function showToast(title, message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastTitle.innerText = title;
+            toastMessage.innerText = message;
+
+            if (type === 'error') {
+                toastIcon.className = 'text-rose-400 text-lg mt-0.5';
+                toastIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            } else {
+                toastIcon.className = 'text-emerald-400 text-lg mt-0.5';
+                toastIcon.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
