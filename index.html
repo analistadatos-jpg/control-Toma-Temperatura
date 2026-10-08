@@ -609,7 +609,7 @@
             renderTableRecords();
         }
 
-        function checkAndRecordMissedShifts() {
+        async function checkAndRecordMissedShifts() {
             if (!currentUser) return;
 
             const now = getCurrentDateTime();
@@ -646,7 +646,7 @@
                     acciones: 'INCUMPLIMIENTO: Registro de turno Mañana no realizado en ventana obligatoria (09:00 - 10:00 AM).'
                 };
                 allDatabaseRecords.unshift(missedMorningRecord);
-                sendMissedShiftToDrive(missedMorningRecord);
+                await sendMissedShiftToDrive(missedMorningRecord);
                 changesMade = true;
             }
 
@@ -671,17 +671,18 @@
                     acciones: 'INCUMPLIMIENTO: Registro de turno Tarde no realizado en ventana obligatoria (03:00 - 04:00 PM).'
                 };
                 allDatabaseRecords.unshift(missedAfternoonRecord);
-                sendMissedShiftToDrive(missedAfternoonRecord);
+                await sendMissedShiftToDrive(missedAfternoonRecord);
                 changesMade = true;
             }
 
             if (changesMade) {
                 localStorage.setItem('mennar_farmacia_records', JSON.stringify(allDatabaseRecords));
+                renderTableRecords();
             }
         }
 
         function sendMissedShiftToDrive(record) {
-            fetch(GOOGLE_SCRIPT_URL, {
+            return fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
