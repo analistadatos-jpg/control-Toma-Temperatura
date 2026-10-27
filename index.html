@@ -9,9 +9,11 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- SheetJS CDN para lectura y modificación de Excel -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- SheetJS CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Chart.js para Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         tailwind.config = {
@@ -44,32 +46,69 @@
             70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
             100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
+
+        .card-3d {
+            background: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-3d:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.15);
+        }
+        .chart-container-3d {
+            position: relative;
+            background: linear-gradient(145deg, #ffffff, #f8fafc);
+            border-radius: 1.25rem;
+            padding: 1.25rem;
+            box-shadow: 6px 6px 14px #e2e8f0, -6px -6px 14px #ffffff;
+        }
     </style>
 </head>
 <body class="text-slate-800 min-h-screen flex flex-col justify-between">
 
-    <!-- Top Bar Header -->
+    <!-- Header -->
     <header class="bg-slate-900 text-white shadow-md border-b border-slate-700">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-4">
-            <div class="flex items-center space-x-4">
+            
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleDashboardView()" class="bg-teal-600 hover:bg-teal-500 text-white px-3.5 py-2 rounded-xl font-bold text-xs transition flex items-center space-x-2 shadow-lg hover:scale-105 transform">
+                    <i class="fa-solid fa-chart-line text-amber-300"></i>
+                    <span>Dashboard BPD 3D</span>
+                </button>
+
                 <div class="flex items-center justify-center bg-white px-3 py-1 rounded-xl shadow-sm border border-slate-200">
                     <img src="Logo-Mennar.png" alt="Mennar® Operador Logístico Farmacéutico" class="h-10 w-auto object-contain" onerror="this.onerror=null; this.src='https://via.placeholder.com/150x50?text=MENNAR';">
                 </div>
-                <div>
+                <div class="hidden sm:block">
                     <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Gestión de Calidad</p>
                     <p class="text-xs text-slate-300">Control de Temperatura y Humedad (BPD)</p>
                 </div>
             </div>
 
-            <!-- Real-time Clock -->
-            <div class="flex items-center bg-slate-800/80 px-4 py-1.5 rounded-lg border border-slate-700">
+            <!-- Reloj y Simulación -->
+            <div class="flex items-center bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 space-x-4">
                 <div class="text-right">
                     <div class="text-xs text-slate-400 font-medium">Reloj del Sistema</div>
                     <div id="liveClock" class="font-mono text-sm font-semibold text-emerald-400">00:00:00 AM</div>
                 </div>
+                <div class="h-6 w-px bg-slate-700"></div>
+                <div class="flex items-center space-x-2">
+                    <label for="simTimeSelect" class="text-xs text-slate-300 flex items-center gap-1">
+                        <i class="fa-solid fa-flask text-amber-400"></i>
+                        <span>Simulación:</span>
+                    </label>
+                    <select id="simTimeSelect" onchange="toggleSimulatedTime()" class="bg-slate-900 text-xs text-white border border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-teal-400">
+                        <option value="REAL">Tiempo Real (Actual)</option>
+                        <option value="MORNING">09:30 AM (Horario Permitido)</option>
+                        <option value="AFTERNOON">03:30 PM (Horario Permitido)</option>
+                        <option value="BLOCKED">11:15 AM (Fuera de Horario - Bloqueado)</option>
+                    </select>
+                </div>
             </div>
 
-            <!-- Current User Info & Logout -->
+            <!-- Usuario activo -->
             <div id="userInfoHeader" class="hidden flex items-center space-x-3">
                 <div class="text-right">
                     <div id="userPuntoDisplay" class="text-xs font-bold text-teal-300">PUNTO NO SELECCIONADO</div>
@@ -86,7 +125,113 @@
     <!-- Main Container -->
     <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow">
 
-        <!-- VIEW 1: LOGIN -->
+        <!-- DASHBOARD GENERAL -->
+        <section id="globalDashboardSection" class="hidden space-y-6">
+            <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-teal-400 text-xl"></i>
+                        <span>Dashboard de Supervisión & Métricas de Cumplimiento BPD</span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Control de frecuencia obligatoria diaria (2 registros al día: Mañana / Tarde).</p>
+                </div>
+
+                <div class="flex items-center gap-3 flex-wrap">
+                    <div class="flex items-center bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 space-x-2">
+                        <label for="dashFilterDate" class="text-xs text-slate-300 font-semibold flex items-center gap-1">
+                            <i class="fa-regular fa-calendar-days text-teal-400"></i>
+                            <span>Fecha:</span>
+                        </label>
+                        <input type="date" id="dashFilterDate" onchange="renderGlobalDashboardData()" class="bg-slate-900 text-xs text-white border border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-teal-400">
+                    </div>
+
+                    <button onclick="exportAuditoriaExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span>Exportar Auditoría BPD</span>
+                    </button>
+
+                    <button onclick="toggleDashboardView()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-xmark text-rose-400"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tarjetas KPI -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="card-3d p-4 border-l-4 border-slate-800">
+                    <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Puntos Monitoreados</div>
+                    <div id="dashTotalPuntos" class="text-3xl font-extrabold text-slate-800 mt-1">0</div>
+                    <div class="text-[11px] text-slate-400 mt-1">Sedes registradas en el sistema</div>
+                </div>
+
+                <div class="card-3d p-4 border-l-4 border-teal-500">
+                    <div class="text-xs font-semibold text-teal-600 uppercase tracking-wider">% Cumplimiento Fecha</div>
+                    <div id="dashPorcentajeCumpli" class="text-3xl font-extrabold text-teal-600 mt-1">0%</div>
+                    <div class="text-[11px] text-slate-400 mt-1">Puntos con las 2 tomas del día al día</div>
+                </div>
+
+                <div class="card-3d p-4 border-l-4 border-emerald-500">
+                    <div class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Tomas Conformes</div>
+                    <div id="dashPuntosConformes" class="text-3xl font-extrabold text-emerald-600 mt-1">0</div>
+                    <div class="text-[11px] text-slate-400 mt-1">Lecturas dentro de rango reglamentario</div>
+                </div>
+
+                <div class="card-3d p-4 border-l-4 border-rose-500">
+                    <div class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Incumplidos / Alertas</div>
+                    <div id="dashPuntosAlerta" class="text-3xl font-extrabold text-rose-600 mt-1">0</div>
+                    <div class="text-[11px] text-slate-400 mt-1">Falta turno o presentan desviación</div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN DE GRÁFICOS VISUALES 3D -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div class="lg:col-span-5 chart-container-3d border border-slate-200">
+                    <h3 class="font-bold text-xs uppercase text-slate-700 tracking-wider mb-4 flex items-center justify-between">
+                        <span>Cumplimiento del Día Seleccionado</span>
+                        <i class="fa-solid fa-chart-pie text-teal-600"></i>
+                    </h3>
+                    <div class="relative h-64 flex items-center justify-center">
+                        <canvas id="chartCumplimiento3D"></canvas>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7 chart-container-3d border border-slate-200">
+                    <h3 class="font-bold text-xs uppercase text-slate-700 tracking-wider mb-4 flex items-center justify-between">
+                        <span>Comparativo de Tomas por Jornada (Mañana vs Tarde)</span>
+                        <i class="fa-solid fa-chart-column text-indigo-600"></i>
+                    </h3>
+                    <div class="relative h-64">
+                        <canvas id="chartJornadas3D"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Cumplimiento por Punto de Servicio -->
+            <div class="card-3d overflow-hidden border border-slate-200">
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                    <h3 class="font-bold text-xs uppercase text-slate-700 tracking-wider">Supervisión Diario de Tomas por Punto (2 Frecuencias al Día)</h3>
+                    <span id="dashFechaLabel" class="text-[11px] font-bold text-teal-700">Fecha seleccionada: ---</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-900 text-slate-200 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-800">
+                                <th class="p-3">Punto de Servicio / Municipio</th>
+                                <th class="p-3">Regente Asignado</th>
+                                <th class="p-3 text-center">Toma Mañana (09:00 - 10:00)</th>
+                                <th class="p-3 text-center">Toma Tarde (15:00 - 16:00)</th>
+                                <th class="p-3 text-center">Estado Equipos</th>
+                                <th class="p-3 text-center">Cumplimiento Diario</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashTableBody" class="divide-y divide-slate-100 text-slate-700">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- LOGIN -->
         <section id="loginSection" class="max-w-md mx-auto my-8 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all">
             <div class="bg-slate-900 p-6 text-white text-center border-b border-slate-800">
                 <div class="inline-flex items-center justify-center bg-white p-2.5 rounded-xl mb-3 shadow-md border border-slate-100">
@@ -105,19 +250,19 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Responsable / Regente del Registro</label>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Regente del Punto (Verificador)</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                            <i class="fa-regular fa-user"></i>
+                            <i class="fa-regular fa-user-check"></i>
                         </span>
-                        <input type="text" id="regenteInput" placeholder="Nombre completo del Regente" required class="w-full pl-9 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none">
+                        <input type="text" id="regenteInput" placeholder="Nombre del Regente" required class="w-full pl-9 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none">
                     </div>
                 </div>
 
                 <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start space-x-2">
                     <i class="fa-solid fa-shield-halved text-blue-600 text-sm mt-0.5"></i>
                     <p class="text-xs text-blue-800 leading-tight">
-                        <strong>Aislamiento de Información:</strong> Cada persona solo tendrá acceso y control sobre los datos remitidos a su sede correspondiente.
+                        <strong>Sincronización Automática:</strong> Cada punto remitirá la información automáticamente a su hoja propia en Google Sheets.
                     </p>
                 </div>
 
@@ -128,10 +273,10 @@
             </form>
         </section>
 
-        <!-- VIEW 2: DASHBOARD Y FORMULARIO -->
+        <!-- DASHBOARD INDIVIDUAL DE PUNTO -->
         <div id="appDashboard" class="hidden space-y-6">
 
-            <!-- Banner informativo de Horarios -->
+            <!-- Banner Horario -->
             <div id="scheduleBanner" class="p-4 rounded-xl border transition-all flex flex-col md:flex-row items-center justify-between gap-4">
                 <div class="flex items-center space-x-3">
                     <div id="scheduleIcon" class="w-10 h-10 rounded-full flex items-center justify-center text-lg">
@@ -147,13 +292,64 @@
                 </div>
             </div>
 
-            <!-- Parameters Legend Cards -->
+            <!-- GESTIÓN DE EQUIPOS -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-microchip text-teal-600"></i>
+                        <h3 class="font-bold text-slate-800 text-sm">Gestión de Equipos de Medición (Termómetros / Termohigrómetros)</h3>
+                    </div>
+                    <span id="equiposStatusBadge" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">Registrar / Editar</span>
+                </div>
+
+                <form id="equiposForm" onsubmit="saveEquiposInfo(event)" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase mb-2 flex items-center gap-1">
+                            <i class="fa-solid fa-temperature-low text-blue-600"></i> Termómetros (Cadena de Frío)
+                        </h4>
+                        <div class="space-y-2">
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600">N° Serie / Código ID</label>
+                                <input type="text" id="eqTermometroSerie" placeholder="Ej: TH-NEV-01 / SN-88392" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs outline-none focus:border-teal-500">
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600">Fecha Última Calibración</label>
+                                <input type="date" id="eqTermometroFechaCalib" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs outline-none focus:border-teal-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <h4 class="text-xs font-bold text-slate-700 uppercase mb-2 flex items-center gap-1">
+                            <i class="fa-solid fa-droplet text-teal-600"></i> Termohigrómetro (Ambiente y Humedad)
+                        </h4>
+                        <div class="space-y-2">
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600">N° Serie / Código ID</label>
+                                <input type="text" id="eqTermohigroSerie" placeholder="Ej: TH-AMB-01 / SN-10294" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs outline-none focus:border-teal-500">
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600">Fecha Última Calibración</label>
+                                <input type="date" id="eqTermohigroFechaCalib" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs outline-none focus:border-teal-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 flex justify-end">
+                        <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-lg font-semibold shadow transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span>Guardar Información de Equipos</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Rangos de referencia -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div>
-                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nevera (Cadena Frío)</span>
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Nevera / Cuarto Frío</span>
                         <div class="text-lg font-bold text-slate-800 mt-1">2.0 °C — 8.0 °C</div>
-                        <span class="text-[10px] text-slate-400">Preventivo: 2-3°C / 7-8°C</span>
                     </div>
                     <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
                         <i class="fa-solid fa-snowflake"></i>
@@ -164,7 +360,6 @@
                     <div>
                         <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Temp. Ambiente</span>
                         <div class="text-lg font-bold text-slate-800 mt-1">15.0 °C — 30.0 °C</div>
-                        <span class="text-[10px] text-slate-400">Preventivo: 15-17°C / 28-30°C</span>
                     </div>
                     <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
                         <i class="fa-solid fa-temperature-three-quarters"></i>
@@ -175,7 +370,6 @@
                     <div>
                         <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Humedad Relativa</span>
                         <div class="text-lg font-bold text-slate-800 mt-1">40 % — 75 %</div>
-                        <span class="text-[10px] text-slate-400">Preventivo: 40-45% / 70-75%</span>
                     </div>
                     <div class="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-xl">
                         <i class="fa-solid fa-droplet"></i>
@@ -183,10 +377,10 @@
                 </div>
             </div>
 
-            <!-- Layout Grid: Left Form / Right Table -->
+            <!-- Formulario y Tabla -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                <!-- DATA ENTRY FORM -->
+                <!-- FORMULARIO DE TOMA DE DATOS -->
                 <div class="lg:col-span-4 bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
                         <h2 class="font-bold text-slate-800 text-sm flex items-center gap-2">
@@ -199,53 +393,73 @@
                     </div>
 
                     <form id="recordForm" onsubmit="submitReading(event)" class="space-y-4">
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Quien Registra Toma de Datos (Auxiliar / Funcionario)</label>
+                            <input type="text" id="inputAuxiliar" placeholder="Nombre completo del auxiliar" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 outline-none">
+                        </div>
+
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Zona / Ubicación</label>
-                            <select id="inputZona" onchange="toggleManualZona()" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 outline-none">
+                            <select id="inputZona" onchange="handleZonaChange()" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 outline-none">
                                 <option value="Área de Dispensación Principal">Área de Dispensación Principal</option>
                                 <option value="Bodega / Almacenamiento">Bodega / Almacenamiento</option>
                                 <option value="Recepción Técnica">Recepción Técnica</option>
-                                <option value="Cuarto Frío / Nevera Medicamentos">Cuarto Frío / Nevera Medicamentos</option>
+                                <option value="Nevera Medicamentos">Nevera Medicamentos</option>
+                                <option value="Cuarto Frío (Aplica solo CEDI)">Cuarto Frío (Aplica solo CEDI)</option>
                                 <option value="OTRO">✏️ Otro / Escribir manualmente...</option>
                             </select>
-                            <input type="text" id="inputZonaManual" placeholder="Escriba la zona o ubicación personalizada..." class="hidden mt-2 w-full bg-slate-50 border border-teal-400 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 outline-none">
+                            <input type="text" id="inputZonaManual" placeholder="Escriba la zona personalizada..." class="hidden mt-2 w-full bg-slate-50 border border-teal-400 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 outline-none">
                         </div>
 
-                        <div>
+                        <!-- TEMPERATURA NEVERA -->
+                        <div id="containerTempNevera" class="transition-all">
                             <div class="flex justify-between items-center mb-1">
-                                <label class="text-xs font-semibold text-slate-600">Temp. Nevera (°C)</label>
+                                <label class="text-xs font-semibold text-slate-600 flex items-center gap-1">
+                                    <span>Temp. Cadena Frío (°C)</span>
+                                    <span id="neveraReqLabel" class="text-[10px] font-bold text-rose-500">(Requerido)</span>
+                                </label>
                                 <span id="statusNevera" class="text-[10px] font-bold px-2 py-0.5 rounded">Rango 2-8°C</span>
                             </div>
                             <div class="relative">
-                                <input type="number" step="0.1" id="inputTempNevera" placeholder="Ej: 4.5" oninput="validateFormInputs()" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                                <input type="number" step="0.1" id="inputTempNevera" placeholder="Ej: 4.5" oninput="validateFormInputs()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
                                 <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">°C</span>
                             </div>
+                            <p id="neveraHelpText" class="text-[10px] text-slate-400 mt-1">Habilitado únicamente para 'Nevera Medicamentos' o 'Cuarto Frío'.</p>
                         </div>
 
-                        <div>
+                        <!-- TEMPERATURA AMBIENTE -->
+                        <div id="containerTempAmbiente" class="transition-all">
                             <div class="flex justify-between items-center mb-1">
-                                <label class="text-xs font-semibold text-slate-600">Temp. Ambiente (°C)</label>
+                                <label class="text-xs font-semibold text-slate-600 flex items-center gap-1">
+                                    <span>Temp. Ambiente (°C)</span>
+                                    <span id="ambienteReqLabel" class="text-[10px] font-bold text-rose-500">(Requerido)</span>
+                                </label>
                                 <span id="statusAmbiente" class="text-[10px] font-bold px-2 py-0.5 rounded">Rango 15-30°C</span>
                             </div>
                             <div class="relative">
-                                <input type="number" step="0.1" id="inputTempAmbiente" placeholder="Ej: 22.0" oninput="validateFormInputs()" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                                <input type="number" step="0.1" id="inputTempAmbiente" placeholder="Ej: 22.0" oninput="validateFormInputs()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
                                 <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">°C</span>
                             </div>
                         </div>
 
-                        <div>
+                        <!-- HUMEDAD RELATIVA -->
+                        <div id="containerHumedad" class="transition-all">
                             <div class="flex justify-between items-center mb-1">
-                                <label class="text-xs font-semibold text-slate-600">Humedad Relativa (%)</label>
+                                <label class="text-xs font-semibold text-slate-600 flex items-center gap-1">
+                                    <span>Humedad Relativa (%)</span>
+                                    <span id="humedadReqLabel" class="text-[10px] font-bold text-rose-500">(Requerido)</span>
+                                </label>
                                 <span id="statusHumedad" class="text-[10px] font-bold px-2 py-0.5 rounded">Rango 40-75%</span>
                             </div>
                             <div class="relative">
-                                <input type="number" step="1" id="inputHumedad" placeholder="Ej: 55" oninput="validateFormInputs()" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
+                                <input type="number" step="1" id="inputHumedad" placeholder="Ej: 55" oninput="validateFormInputs()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500 outline-none">
                                 <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">%</span>
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Verificado ✓ (Calidad / Líder)</label>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Verificado ✓ (Regente del Punto)</label>
                             <select id="inputVerificado" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-teal-500 outline-none">
                                 <option value="SÍ">SÍ</option>
                                 <option value="NO" selected>NO</option>
@@ -255,10 +469,9 @@
                         <div id="correctiveActionGroup" class="hidden p-3 bg-rose-50 border border-rose-200 rounded-lg space-y-1">
                             <label class="block text-xs font-bold text-rose-800 flex items-center gap-1">
                                 <i class="fa-solid fa-triangle-exclamation"></i>
-                                <span>Acciones Correctivas (Obligatorio por Alerta Crítica)</span>
+                                <span>Acciones Correctivas (Obligatorio)</span>
                             </label>
-                            <p class="text-[11px] text-rose-600">Se detectó una desviación fuera de rango. Describa la acción preventiva o correctiva ejecutada inmediatamente.</p>
-                            <textarea id="inputAcciones" rows="3" placeholder="Ej: Se ajustó el termostato de la nevera y se notificó al área de mantenimiento/coordinación..." class="w-full bg-white border border-rose-300 rounded-lg p-2 text-xs text-slate-800 focus:ring-2 focus:ring-rose-500 outline-none"></textarea>
+                            <textarea id="inputAcciones" rows="3" placeholder="Ej: Se ajustó el termostato y se notificó a la coordinación..." class="w-full bg-white border border-rose-300 rounded-lg p-2 text-xs text-slate-800 focus:ring-2 focus:ring-rose-500 outline-none"></textarea>
                         </div>
 
                         <button type="submit" id="btnSubmitForm" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition text-xs flex items-center justify-center space-x-2">
@@ -268,7 +481,7 @@
                     </form>
                 </div>
 
-                <!-- TABLE DISPLAY -->
+                <!-- TABLA HISTÓRICA -->
                 <div class="lg:col-span-8 space-y-4">
 
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -276,13 +489,10 @@
                             <i class="fa-solid fa-table-list text-teal-600"></i>
                             <h2 class="font-bold text-slate-800 text-sm">Histórico del Punto: <span id="currentPuntoTitle" class="text-teal-700">---</span></h2>
                         </div>
-                        <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-2 flex-wrap gap-2">
                             <button onclick="exportCSV()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
                                 <i class="fa-solid fa-file-excel"></i>
-                                <span>Exportar Formato Oficial Excel (.xlsx)</span>
-                            </button>
-                            <button onclick="clearPuntoData()" class="bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium transition" title="Borrar registros locales de este punto">
-                                <i class="fa-solid fa-trash-can"></i>
+                                <span>Exportar Excel (.xlsx)</span>
                             </button>
                         </div>
                     </div>
@@ -294,8 +504,9 @@
                                     <tr class="bg-slate-900 text-slate-200 uppercase font-semibold text-[11px] tracking-wider border-b border-slate-800">
                                         <th class="p-3">N° / Fecha</th>
                                         <th class="p-3">Jornada / Hora</th>
+                                        <th class="p-3">Registró / Verificó</th>
                                         <th class="p-3">Zona</th>
-                                        <th class="p-3 text-center">Nevera (°C)</th>
+                                        <th class="p-3 text-center">Nevera/CF (°C)</th>
                                         <th class="p-3 text-center">Ambiente (°C)</th>
                                         <th class="p-3 text-center">Humedad (%)</th>
                                         <th class="p-3 text-center">Estado General</th>
@@ -313,7 +524,6 @@
                                 <i class="fa-regular fa-folder-open text-xl"></i>
                             </div>
                             <p class="text-xs font-medium text-slate-500">No hay lecturas registradas para este punto de servicio.</p>
-                            <p class="text-[11px] text-slate-400">Complete el formulario en el horario permitido para ingresar datos.</p>
                         </div>
                     </div>
 
@@ -324,21 +534,20 @@
 
     </main>
 
-    <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 py-4 mt-8">
         <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
             <div>
-                <strong>Mennar® Operador Logístico Farmacéutico</strong> &copy; 2026 - Control de Condiciones de Almacenamiento y Dispensación (BPD)
+                <strong>Mennar® Operador Logístico Farmacéutico</strong> &copy; 2026 - Control BPD
             </div>
             <div class="flex items-center space-x-4 text-[11px]">
-                <span class="text-slate-400">Versión: 01</span>
+                <span class="text-slate-400">Versión: 02</span>
                 <span class="text-slate-400">Código: GQ-FO-01</span>
                 <span class="text-teal-600 font-semibold">Vigencia: 20/04/2026</span>
             </div>
         </div>
     </footer>
 
-    <!-- Notification Toast Modal -->
+    <!-- Toast Modal -->
     <div id="toast" class="fixed bottom-5 right-5 transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm w-full bg-slate-900 text-white p-4 rounded-xl shadow-2xl border border-slate-700 flex items-start space-x-3 z-50 pointer-events-none">
         <div id="toastIcon" class="text-emerald-400 text-lg mt-0.5">
             <i class="fa-solid fa-circle-check"></i>
@@ -349,11 +558,12 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT APP LOGIC -->
+    <!-- LÓGICA JAVASCRIPT -->
     <script>
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz3GKlwkS9raN9tfvKbu0Ny-3t9uG_rZSDA9K4ROS2IUdXfti1L80iqv_W3V-Fwrjca/exec";
 
         let PUNTOS_BD = JSON.parse(localStorage.getItem('mennar_puntos_custom')) || [
+            { area: "BODEGA CEDI", municipio: "POPAYAN", regente: "CLAUDIA BUESACO", nit: "00000000" },
             { area: "05 DISPENSARIO MENNAR 1", municipio: "POPAYAN", regente: "PIAMBA POTOSI MARIA ALEXANDRA", nit: "1063813534" },
             { area: "06 DISPENSARIO MENNAR 2", municipio: "POPAYAN", regente: "URREA HERRERA SANDRA LILIANA", nit: "34326227" },
             { area: "08 DISPENSARIO MENNAR 4", municipio: "POPAYAN", regente: "HERRERA ARIAS JULIAN", nit: "76326058" },
@@ -401,7 +611,12 @@
         ];
 
         let currentUser = null; 
+        let timeSimulationMode = 'REAL'; 
         let allDatabaseRecords = JSON.parse(localStorage.getItem('mennar_farmacia_records')) || [];
+        let equiposDatabase = {};
+
+        let chartCumplimientoObj = null;
+        let chartJornadasObj = null;
 
         const RANGES = {
             nevera:   { min: 2.0, max: 8.0, warnMin: 3.0, warnMax: 7.0 },
@@ -412,22 +627,32 @@
         window.onload = function() {
             populatePuntosSelect();
             startLiveClock();
-            validateFormInputs();
+            handleZonaChange();
+
+            const today = getCurrentDateTime();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            document.getElementById('dashFilterDate').value = `${year}-${month}-${day}`;
+
+            fetchEquiposStateFromDrive();
             logout(false);
         };
 
-        function toggleManualZona() {
-            const select = document.getElementById('inputZona');
-            const manualInput = document.getElementById('inputZonaManual');
-            if (select.value === 'OTRO') {
-                manualInput.classList.remove('hidden');
-                manualInput.required = true;
-                manualInput.focus();
-            } else {
-                manualInput.classList.add('hidden');
-                manualInput.required = false;
-                manualInput.value = '';
-            }
+        // CONSULTAR ESTADO REAL EN LÍNEA DESDE GOOGLE DRIVE
+        function fetchEquiposStateFromDrive() {
+            fetch(`${GOOGLE_SCRIPT_URL}?action=getEquiposState`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data) {
+                        equiposDatabase = data;
+                        localStorage.setItem('mennar_equipos_records', JSON.stringify(equiposDatabase));
+                        if (!document.getElementById('globalDashboardSection').classList.contains('hidden')) {
+                            renderGlobalDashboardData();
+                        }
+                    }
+                })
+                .catch(err => console.warn("Sincronización en línea de equipos no disponible offline:", err));
         }
 
         function populatePuntosSelect() {
@@ -449,25 +674,351 @@
             }
         }
 
-        function getCurrentDateTime() { return new Date(); }
+        function handleZonaChange() {
+            const select = document.getElementById('inputZona');
+            const manualInput = document.getElementById('inputZonaManual');
+
+            const inputNevera = document.getElementById('inputTempNevera');
+            const reqNeveraLabel = document.getElementById('neveraReqLabel');
+            const helpNeveraText = document.getElementById('neveraHelpText');
+
+            const inputAmbiente = document.getElementById('inputTempAmbiente');
+            const reqAmbienteLabel = document.getElementById('ambienteReqLabel');
+
+            const inputHumedad = document.getElementById('inputHumedad');
+            const reqHumedadLabel = document.getElementById('humedadReqLabel');
+
+            if (select.value === 'OTRO') {
+                manualInput.classList.remove('hidden');
+                manualInput.required = true;
+            } else {
+                manualInput.classList.add('hidden');
+                manualInput.required = false;
+                manualInput.value = '';
+            }
+
+            const isColdChainZone = (select.value === 'Nevera Medicamentos' || select.value === 'Cuarto Frío (Aplica solo CEDI)');
+
+            if (isColdChainZone) {
+                inputNevera.disabled = false;
+                inputNevera.required = true;
+                inputNevera.classList.remove('bg-slate-200', 'cursor-not-allowed');
+                inputNevera.classList.add('bg-slate-50');
+                reqNeveraLabel.innerText = '(Requerido)';
+                reqNeveraLabel.className = 'text-[10px] font-bold text-rose-500';
+                helpNeveraText.innerText = 'Rango exigido: 2.0 °C - 8.0 °C.';
+
+                inputAmbiente.disabled = true;
+                inputAmbiente.required = false;
+                inputAmbiente.value = '';
+                inputAmbiente.classList.remove('bg-slate-50');
+                inputAmbiente.classList.add('bg-slate-200', 'cursor-not-allowed');
+                reqAmbienteLabel.innerText = '(No aplica - N/A)';
+                reqAmbienteLabel.className = 'text-[10px] font-normal text-slate-400';
+
+                inputHumedad.disabled = true;
+                inputHumedad.required = false;
+                inputHumedad.value = '';
+                inputHumedad.classList.remove('bg-slate-50');
+                inputHumedad.classList.add('bg-slate-200', 'cursor-not-allowed');
+                reqHumedadLabel.innerText = '(No aplica - N/A)';
+                reqHumedadLabel.className = 'text-[10px] font-normal text-slate-400';
+
+            } else {
+                inputNevera.disabled = true;
+                inputNevera.required = false;
+                inputNevera.value = '';
+                inputNevera.classList.remove('bg-slate-50');
+                inputNevera.classList.add('bg-slate-200', 'cursor-not-allowed');
+                reqNeveraLabel.innerText = '(No aplica - N/A)';
+                reqNeveraLabel.className = 'text-[10px] font-normal text-slate-400';
+                helpNeveraText.innerText = 'Campo deshabilitado para áreas sin cadena de frío.';
+
+                inputAmbiente.disabled = false;
+                inputAmbiente.required = true;
+                inputAmbiente.classList.remove('bg-slate-200', 'cursor-not-allowed');
+                inputAmbiente.classList.add('bg-slate-50');
+                reqAmbienteLabel.innerText = '(Requerido)';
+                reqAmbienteLabel.className = 'text-[10px] font-bold text-rose-500';
+
+                inputHumedad.disabled = false;
+                inputHumedad.required = true;
+                inputHumedad.classList.remove('bg-slate-200', 'cursor-not-allowed');
+                inputHumedad.classList.add('bg-slate-50');
+                reqHumedadLabel.innerText = '(Requerido)';
+                reqHumedadLabel.className = 'text-[10px] font-bold text-rose-500';
+            }
+
+            validateFormInputs();
+        }
+
+        function toggleDashboardView() {
+            const dashSection = document.getElementById('globalDashboardSection');
+            const loginSection = document.getElementById('loginSection');
+            const appDashboard = document.getElementById('appDashboard');
+
+            if (dashSection.classList.contains('hidden')) {
+                dashSection.classList.remove('hidden');
+                loginSection.classList.add('hidden');
+                appDashboard.classList.add('hidden');
+                fetchEquiposStateFromDrive();
+                renderGlobalDashboardData();
+            } else {
+                dashSection.classList.add('hidden');
+                if (currentUser) {
+                    appDashboard.classList.remove('hidden');
+                } else {
+                    loginSection.classList.remove('hidden');
+                }
+            }
+        }
+
+        function getSelectedDashDateFormatted() {
+            const dateInputVal = document.getElementById('dashFilterDate').value;
+            if (!dateInputVal) {
+                return getCurrentDateTime().toLocaleDateString('es-CO');
+            }
+            const parts = dateInputVal.split('-');
+            return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}/${parts[0]}`;
+        }
+
+        function renderGlobalDashboardData() {
+            const targetDateStr = getSelectedDashDateFormatted();
+            document.getElementById('dashFechaLabel').innerText = `Fecha de evaluación: ${targetDateStr}`;
+
+            const totalPuntos = PUNTOS_BD.length;
+
+            let completadosDosTomas = 0;
+            let alertasCount = 0;
+            let totalConformesHoy = 0;
+
+            let morningCount = 0;
+            let afternoonCount = 0;
+
+            const tbody = document.getElementById('dashTableBody');
+            tbody.innerHTML = '';
+
+            PUNTOS_BD.forEach(p => {
+                const puntoNombre = `${p.area} (${p.municipio})`;
+                const recordsPunto = allDatabaseRecords.filter(r => r.punto === puntoNombre);
+                
+                const regMorning = recordsPunto.find(r => r.fecha === targetDateStr && r.jornada === 'Mañana');
+                const regAfternoon = recordsPunto.find(r => r.fecha === targetDateStr && r.jornada === 'Tarde');
+
+                if (regMorning) morningCount++;
+                if (regAfternoon) afternoonCount++;
+
+                const eqInfo = equiposDatabase[puntoNombre] || {};
+                const hasEquipos = Boolean(eqInfo.registrado);
+
+                const hasBoth = regMorning && regAfternoon;
+                if (hasBoth) completadosDosTomas++;
+
+                if (regMorning && regMorning.estadoGeneral === 'CONFORME') totalConformesHoy++;
+                if (regAfternoon && regAfternoon.estadoGeneral === 'CONFORME') totalConformesHoy++;
+
+                let estadoPuntoClass = 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold';
+                let estadoPuntoText = 'Cumplió (2/2)';
+
+                const hasCritical = recordsPunto.some(r => r.fecha === targetDateStr && r.estadoGeneral === 'CRÍTICO');
+                
+                if (hasCritical) {
+                    estadoPuntoClass = 'bg-rose-100 text-rose-800 border-rose-300 font-bold';
+                    estadoPuntoText = 'Alerta / Crítico';
+                    alertasCount++;
+                } else if (!hasBoth) {
+                    estadoPuntoClass = 'bg-amber-100 text-amber-800 border-amber-300 font-bold';
+                    estadoPuntoText = `Incompleto (${regMorning ? '1' : '0'}/2)`;
+                    alertasCount++;
+                }
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                        <td class="p-3 font-bold text-slate-800">${puntoNombre}</td>
+                        <td class="p-3 text-slate-600">${p.regente}</td>
+                        <td class="p-3 text-center">
+                            ${regMorning 
+                                ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[11px] font-bold">✓ ${regMorning.hora}</span>` 
+                                : `<span class="bg-slate-100 text-slate-400 px-2 py-0.5 rounded text-[11px]">Pendiente</span>`}
+                        </td>
+                        <td class="p-3 text-center">
+                            ${regAfternoon 
+                                ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[11px] font-bold">✓ ${regAfternoon.hora}</span>` 
+                                : `<span class="bg-slate-100 text-slate-400 px-2 py-0.5 rounded text-[11px]">Pendiente</span>`}
+                        </td>
+                        <td class="p-3 text-center">
+                            ${hasEquipos 
+                                ? `<span class="text-teal-600 font-semibold">✓ Registrado</span>` 
+                                : `<span class="text-amber-600 font-semibold">⚠️ Sin registrar</span>`}
+                        </td>
+                        <td class="p-3 text-center">
+                            <span class="inline-block px-2.5 py-1 rounded-full text-[10px] border ${estadoPuntoClass}">${estadoPuntoText}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            const porcCumpli = totalPuntos > 0 ? Math.round((completadosDosTomas / totalPuntos) * 100) : 0;
+
+            document.getElementById('dashTotalPuntos').innerText = totalPuntos;
+            document.getElementById('dashPorcentajeCumpli').innerText = `${porcCumpli}%`;
+            document.getElementById('dashPuntosConformes').innerText = totalConformesHoy;
+            document.getElementById('dashPuntosAlerta').innerText = alertasCount;
+
+            renderCharts3D(completadosDosTomas, (totalPuntos - completadosDosTomas), morningCount, afternoonCount);
+        }
+
+        function renderCharts3D(completos, pendientes, morning, afternoon) {
+            const ctx1 = document.getElementById('chartCumplimiento3D').getContext('2d');
+            if (chartCumplimientoObj) chartCumplimientoObj.destroy();
+
+            chartCumplimientoObj = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Cumplieron (2/2 Tomas)', 'Incompletos / Pendientes'],
+                    datasets: [{
+                        data: [completos, pendientes],
+                        backgroundColor: ['#00878a', '#f43f5e'],
+                        borderWidth: 3,
+                        borderColor: '#ffffff',
+                        hoverOffset: 12
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { family: 'Inter', size: 11, weight: 'bold' } } }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('chartJornadas3D').getContext('2d');
+            if (chartJornadasObj) chartJornadasObj.destroy();
+
+            chartJornadasObj = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['Mañana (09:00 - 10:00 AM)', 'Tarde (03:00 - 04:00 PM)'],
+                    datasets: [{
+                        label: 'Lecturas Registradas',
+                        data: [morning, afternoon],
+                        backgroundColor: ['#16a34a', '#0284c7'],
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: '#cbd5e1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    }
+                }
+            });
+        }
+
+        function exportAuditoriaExcel() {
+            const targetDateStr = getSelectedDashDateFormatted();
+
+            try {
+                const wb = XLSX.utils.book_new();
+
+                const rowsReport = [
+                    ["MENNAR® OPERADOR LOGÍSTICO FARMACÉUTICO"],
+                    ["INFORME DE AUDITORÍA Y CUMPLIMIENTO DIARIO DE TOMAS BPD"],
+                    [`Fecha Evaluada: ${targetDateStr}`, "", "", "", "", `Fecha Generación: ${new Date().toLocaleString('es-CO')}`],
+                    [],
+                    ["N°", "Punto de Servicio", "Municipio", "Regente Responsable", "Toma Mañana", "Hora Mañana", "Toma Tarde", "Hora Tarde", "Cumplimiento Diarios (2 Tomas)", "Estado Equipos"]
+                ];
+
+                PUNTOS_BD.forEach((p, idx) => {
+                    const puntoNombre = `${p.area} (${p.municipio})`;
+                    const recordsPunto = allDatabaseRecords.filter(r => r.punto === puntoNombre);
+
+                    const regMorning = recordsPunto.find(r => r.fecha === targetDateStr && r.jornada === 'Mañana');
+                    const regAfternoon = recordsPunto.find(r => r.fecha === targetDateStr && r.jornada === 'Tarde');
+
+                    const eqInfo = equiposDatabase[puntoNombre] || {};
+                    const hasEquipos = Boolean(eqInfo.registrado);
+
+                    const hasBoth = regMorning && regAfternoon;
+                    let estadoCumpli = "CUMPLIÓ (2/2)";
+                    if (!hasBoth) estadoCumpli = "INCUMPLIÓ / INCOMPLETO";
+
+                    rowsReport.push([
+                        idx + 1,
+                        p.area,
+                        p.municipio,
+                        p.regente,
+                        regMorning ? "REGISTRADO" : "PENDIENTE",
+                        regMorning ? regMorning.hora : "N/A",
+                        regAfternoon ? "REGISTRADO" : "PENDIENTE",
+                        regAfternoon ? regAfternoon.hora : "N/A",
+                        estadoCumpli,
+                        hasEquipos ? "REGISTRADOS" : "PENDIENTES"
+                    ]);
+                });
+
+                const ws = XLSX.utils.aoa_to_sheet(rowsReport);
+                ws['!cols'] = [{ wch: 5 }, { wch: 35 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 25 }, { wch: 18 }];
+
+                XLSX.utils.book_append_sheet(wb, ws, "Auditoria_Cumplimiento");
+
+                const cleanDate = targetDateStr.replace(/\//g, '-');
+                XLSX.writeFile(wb, `Informe_Auditoria_Cumplimiento_BPD_${cleanDate}.xlsx`);
+                showToast('Informe Generado', 'Descarga completada con éxito.');
+
+            } catch (err) {
+                console.error("Error al exportar informe:", err);
+                showToast('Error', 'No se pudo generar el informe en Excel.', 'error');
+            }
+        }
+
+        function getCurrentDateTime() {
+            const now = new Date();
+            if (timeSimulationMode === 'MORNING') now.setHours(9, 30, 0);
+            else if (timeSimulationMode === 'AFTERNOON') now.setHours(15, 30, 0);
+            else if (timeSimulationMode === 'BLOCKED') now.setHours(11, 15, 0);
+            return now;
+        }
 
         function startLiveClock() {
             setInterval(() => {
                 const now = getCurrentDateTime();
                 const timeString = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
                 document.getElementById('liveClock').innerText = timeString;
-                if (currentUser) evaluateScheduleRestrictions();
+                
+                if (currentUser) {
+                    evaluateScheduleRestrictions();
+                }
             }, 1000);
+        }
+
+        function toggleSimulatedTime() {
+            timeSimulationMode = document.getElementById('simTimeSelect').value;
+            const now = getCurrentDateTime();
+            const timeString = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+            document.getElementById('liveClock').innerText = timeString;
+            
+            if (currentUser) {
+                evaluateScheduleRestrictions();
+            }
+            showToast('Modo Simulación', `Hora ajustada a: ${timeString}`);
         }
 
         function isWithinAllowedSchedule() {
             const now = getCurrentDateTime();
             const minutes = now.getHours() * 60 + now.getMinutes();
 
-            const morningStart = 9 * 60;        // 09:00 AM
-            const morningEnd = 10 * 60;          // 10:00 AM
-            const afternoonStart = 15 * 60;      // 03:00 PM
-            const afternoonEnd = 16 * 60;        // 04:00 PM
+            const morningStart = 9 * 60;        
+            const morningEnd = 10 * 60;          
+            const afternoonStart = 15 * 60;      
+            const afternoonEnd = 16 * 60;        
 
             const isMorning = (minutes >= morningStart && minutes <= morningEnd);
             const isAfternoon = (minutes >= afternoonStart && minutes <= afternoonEnd);
@@ -486,7 +1037,7 @@
             const badge = document.getElementById('scheduleBadge');
             const jornadaBadge = document.getElementById('jornadaAutoBadge');
             const submitBtn = document.getElementById('btnSubmitForm');
-            const inputs = ['inputZona', 'inputZonaManual', 'inputTempNevera', 'inputTempAmbiente', 'inputHumedad', 'inputVerificado', 'inputAcciones'];
+            const inputs = ['inputAuxiliar', 'inputZona', 'inputZonaManual', 'inputTempNevera', 'inputTempAmbiente', 'inputHumedad', 'inputVerificado', 'inputAcciones'];
 
             if (scheduleInfo.allowed) {
                 banner.className = 'p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 transition-all flex flex-col md:flex-row items-center justify-between gap-4';
@@ -501,6 +1052,7 @@
                     const el = document.getElementById(id);
                     if (el) el.disabled = false;
                 });
+                handleZonaChange();
                 submitBtn.disabled = false;
                 submitBtn.className = 'w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold py-2.5 px-4 rounded-lg shadow transition text-xs flex items-center justify-center space-x-2 cursor-pointer';
             } else {
@@ -522,20 +1074,27 @@
         }
 
         function evaluateValue(val, rangeConfig) {
-            if (val === null || val === undefined || isNaN(val)) return { state: 'NEUTRAL', colorClass: 'bg-slate-100 text-slate-600' };
-            if (val < rangeConfig.min || val > rangeConfig.max) {
+            if (val === null || val === undefined || isNaN(val) || val === '' || val === 'N/A') {
+                return { state: 'NEUTRAL', colorClass: 'bg-slate-100 text-slate-600', label: 'N/A' };
+            }
+            const num = parseFloat(val);
+            if (num < rangeConfig.min || num > rangeConfig.max) {
                 return { state: 'CRITICO', colorClass: 'bg-rose-100 text-rose-700 border border-rose-300', label: 'CRÍTICO' };
             }
-            if (val <= rangeConfig.warnMin || val >= rangeConfig.warnMax) {
+            if (num <= rangeConfig.warnMin || num >= rangeConfig.warnMax) {
                 return { state: 'PREVENTIVO', colorClass: 'bg-amber-100 text-amber-800 border border-amber-300', label: 'PREVENTIVO' };
             }
             return { state: 'CONFORME', colorClass: 'bg-emerald-100 text-emerald-800 border border-emerald-300', label: 'CONFORME' };
         }
 
         function validateFormInputs() {
-            const tempNevera = parseFloat(document.getElementById('inputTempNevera').value);
-            const tempAmb = parseFloat(document.getElementById('inputTempAmbiente').value);
-            const humedad = parseFloat(document.getElementById('inputHumedad').value);
+            const inputNevera = document.getElementById('inputTempNevera');
+            const inputAmbiente = document.getElementById('inputTempAmbiente');
+            const inputHumedad = document.getElementById('inputHumedad');
+
+            const tempNevera = inputNevera.disabled ? null : parseFloat(inputNevera.value);
+            const tempAmb = inputAmbiente.disabled ? null : parseFloat(inputAmbiente.value);
+            const humedad = inputHumedad.disabled ? null : parseFloat(inputHumedad.value);
 
             const resNevera = evaluateValue(tempNevera, RANGES.nevera);
             const resAmb = evaluateValue(tempAmb, RANGES.ambiente);
@@ -561,7 +1120,7 @@
             const badge = document.getElementById(elementId);
             if (result.state === 'NEUTRAL') {
                 badge.className = 'text-[10px] font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-500';
-                badge.innerText = 'Rango Normal';
+                badge.innerText = 'N/A';
             } else {
                 badge.className = `text-[10px] font-bold px-2 py-0.5 rounded ${result.colorClass}`;
                 badge.innerText = result.label;
@@ -592,11 +1151,13 @@
             currentUser = null;
             document.getElementById('loginSection').classList.remove('hidden');
             document.getElementById('appDashboard').classList.add('hidden');
+            document.getElementById('globalDashboardSection').classList.add('hidden');
             document.getElementById('userInfoHeader').classList.add('hidden');
         }
 
         function renderUserView() {
             document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('globalDashboardSection').classList.add('hidden');
             document.getElementById('appDashboard').classList.remove('hidden');
             document.getElementById('userInfoHeader').classList.remove('hidden');
 
@@ -604,90 +1165,73 @@
             document.getElementById('userRegenteDisplay').innerText = `Regente: ${currentUser.regente}`;
             document.getElementById('currentPuntoTitle').innerText = currentUser.punto;
 
-            checkAndRecordMissedShifts();
+            loadEquiposInfo();
             evaluateScheduleRestrictions();
             renderTableRecords();
         }
 
-        async function checkAndRecordMissedShifts() {
+        function loadEquiposInfo() {
             if (!currentUser) return;
+            const info = equiposDatabase[currentUser.punto] || {};
+            document.getElementById('eqTermometroSerie').value = (info.termometroSerie && info.termometroSerie !== 'N/R') ? info.termometroSerie : '';
+            document.getElementById('eqTermometroFechaCalib').value = (info.termometroCalib && info.termometroCalib !== 'N/R') ? info.termometroCalib : '';
+            document.getElementById('eqTermohigroSerie').value = (info.termohigroSerie && info.termohigroSerie !== 'N/R') ? info.termohigroSerie : '';
+            document.getElementById('eqTermohigroFechaCalib').value = (info.termohigroCalib && info.termohigroCalib !== 'N/R') ? info.termohigroCalib : '';
 
-            const now = getCurrentDateTime();
-            const dateStr = now.toLocaleDateString('es-CO');
-            const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-            const morningDeadline = 10 * 60;   // 10:00 AM
-            const afternoonDeadline = 16 * 60; // 04:00 PM
-
-            let changesMade = false;
-            const todayRecords = allDatabaseRecords.filter(r => r.punto === currentUser.punto && r.fecha === dateStr);
-
-            const hasMorning = todayRecords.some(r => r.jornada === 'Mañana');
-            const hasAfternoon = todayRecords.some(r => r.jornada === 'Tarde');
-
-            if (currentMinutes > morningDeadline && !hasMorning) {
-                const missedMorningRecord = {
-                    id: Date.now() - 2,
-                    punto: currentUser.punto,
-                    municipio: currentUser.municipio || '',
-                    regente: currentUser.regente,
-                    responsable: currentUser.regente,
-                    fecha: dateStr,
-                    hora: '10:00:00 AM',
-                    jornada: 'Mañana',
-                    zona: 'Sistema (Automático)',
-                    tempNevera: 'N/A',
-                    tempAmbiente: 'N/A',
-                    humedad: 'N/A',
-                    cumpleTemperatura: 'NO',
-                    cumpleHumedad: 'NO',
-                    estadoGeneral: 'NO REALIZADO',
-                    verificado: 'NO',
-                    acciones: 'INCUMPLIMIENTO: Registro de turno Mañana no realizado en ventana obligatoria (09:00 - 10:00 AM).'
-                };
-                allDatabaseRecords.unshift(missedMorningRecord);
-                await sendMissedShiftToDrive(missedMorningRecord);
-                changesMade = true;
-            }
-
-            if (currentMinutes > afternoonDeadline && !hasAfternoon) {
-                const missedAfternoonRecord = {
-                    id: Date.now() - 1,
-                    punto: currentUser.punto,
-                    municipio: currentUser.municipio || '',
-                    regente: currentUser.regente,
-                    responsable: currentUser.regente,
-                    fecha: dateStr,
-                    hora: '04:00:00 PM',
-                    jornada: 'Tarde',
-                    zona: 'Sistema (Automático)',
-                    tempNevera: 'N/A',
-                    tempAmbiente: 'N/A',
-                    humedad: 'N/A',
-                    cumpleTemperatura: 'NO',
-                    cumpleHumedad: 'NO',
-                    estadoGeneral: 'NO REALIZADO',
-                    verificado: 'NO',
-                    acciones: 'INCUMPLIMIENTO: Registro de turno Tarde no realizado en ventana obligatoria (03:00 - 04:00 PM).'
-                };
-                allDatabaseRecords.unshift(missedAfternoonRecord);
-                await sendMissedShiftToDrive(missedAfternoonRecord);
-                changesMade = true;
-            }
-
-            if (changesMade) {
-                localStorage.setItem('mennar_farmacia_records', JSON.stringify(allDatabaseRecords));
-                renderTableRecords();
+            const badge = document.getElementById('equiposStatusBadge');
+            if (info.registrado) {
+                badge.className = 'text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full';
+                badge.innerText = '✓ Equipos Registrados';
+            } else {
+                badge.className = 'text-xs bg-amber-100 text-amber-800 font-bold px-2.5 py-1 rounded-full';
+                badge.innerText = '⚠️ Equipos Pendientes';
             }
         }
 
-        function sendMissedShiftToDrive(record) {
-            return fetch(GOOGLE_SCRIPT_URL, {
+        function saveEquiposInfo(e) {
+            e.preventDefault();
+            if (!currentUser) return;
+
+            const termometroSerie = document.getElementById('eqTermometroSerie').value.trim();
+            const termometroCalib = document.getElementById('eqTermometroFechaCalib').value;
+            const termohigroSerie = document.getElementById('eqTermohigroSerie').value.trim();
+            const termohigroCalib = document.getElementById('eqTermohigroFechaCalib').value;
+
+            const registrado = Boolean(termometroSerie || termohigroSerie);
+
+            const info = {
+                termometroSerie: termometroSerie || 'N/R',
+                termometroCalib: termometroCalib || 'N/R',
+                termohigroSerie: termohigroSerie || 'N/R',
+                termohigroCalib: termohigroCalib || 'N/R',
+                registrado: registrado
+            };
+
+            equiposDatabase[currentUser.punto] = info;
+            localStorage.setItem('mennar_equipos_records', JSON.stringify(equiposDatabase));
+            loadEquiposInfo();
+
+            showToast('Procesando...', 'Sincronizando equipos con Google Sheets...');
+
+            fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(record)
-            }).catch(err => console.error("Error reporte automático:", err));
+                body: JSON.stringify({
+                    action: 'updateEquipos',
+                    punto: currentUser.punto,
+                    termometroSerie: info.termometroSerie,
+                    termometroCalib: info.termometroCalib,
+                    termohigroSerie: info.termohigroSerie,
+                    termohigroCalib: info.termohigroCalib
+                })
+            }).then(() => {
+                showToast('Equipos Actualizados', 'Información sincronizada en Google Sheets.');
+                fetchEquiposStateFromDrive();
+            }).catch(err => {
+                console.error("Error al actualizar equipos en Drive:", err);
+                showToast('Guardado Local', 'Se guardó en la App, pero falló la conexión con Drive.');
+            });
         }
 
         function submitReading(e) {
@@ -699,6 +1243,7 @@
                 return;
             }
 
+            const auxiliar = document.getElementById('inputAuxiliar').value.trim();
             const selectZona = document.getElementById('inputZona').value;
             const manualZona = document.getElementById('inputZonaManual').value.trim();
             
@@ -711,16 +1256,36 @@
                 zonaFinal = manualZona;
             }
 
+            const isColdChainZone = (selectZona === 'Nevera Medicamentos' || selectZona === 'Cuarto Frío (Aplica solo CEDI)');
+            
+            const inputNeveraVal = document.getElementById('inputTempNevera').value;
+            const inputAmbienteVal = document.getElementById('inputTempAmbiente').value;
+            const inputHumedadVal = document.getElementById('inputHumedad').value;
+
+            if (isColdChainZone) {
+                if (inputNeveraVal === '' || isNaN(inputNeveraVal)) {
+                    showToast('Atención', 'Para Nevera / Cuarto Frío debe ingresar el dato de temperatura.', 'error');
+                    return;
+                }
+            } else {
+                if (inputAmbienteVal === '' || isNaN(inputAmbienteVal) || inputHumedadVal === '' || isNaN(inputHumedadVal)) {
+                    showToast('Atención', 'Debe ingresar la Temperatura Ambiente y la Humedad Relativa.', 'error');
+                    return;
+                }
+            }
+
             const now = getCurrentDateTime();
-            const tempNevera = parseFloat(document.getElementById('inputTempNevera').value);
-            const tempAmb = parseFloat(document.getElementById('inputTempAmbiente').value);
-            const humedad = parseFloat(document.getElementById('inputHumedad').value);
+            
+            const tempNevera = isColdChainZone ? parseFloat(inputNeveraVal) : 'N/A';
+            const tempAmb = isColdChainZone ? 'N/A' : parseFloat(inputAmbienteVal);
+            const humedad = isColdChainZone ? 'N/A' : parseFloat(inputHumedadVal);
+
             const verificado = document.getElementById('inputVerificado').value;
             const acciones = document.getElementById('inputAcciones').value.trim();
 
-            const resNevera = evaluateValue(tempNevera, RANGES.nevera);
-            const resAmb = evaluateValue(tempAmb, RANGES.ambiente);
-            const resHum = evaluateValue(humedad, RANGES.humedad);
+            const resNevera = isColdChainZone ? evaluateValue(tempNevera, RANGES.nevera) : { state: 'NEUTRAL', label: 'N/A' };
+            const resAmb = isColdChainZone ? { state: 'NEUTRAL', label: 'N/A' } : evaluateValue(tempAmb, RANGES.ambiente);
+            const resHum = isColdChainZone ? { state: 'NEUTRAL', label: 'N/A' } : evaluateValue(humedad, RANGES.humedad);
 
             let estadoGeneral = 'CONFORME';
             if (resNevera.state === 'CRITICO' || resAmb.state === 'CRITICO' || resHum.state === 'CRITICO') {
@@ -729,10 +1294,13 @@
                 estadoGeneral = 'PREVENTIVO';
             }
 
+            const equiposInfo = equiposDatabase[currentUser.punto] || {};
+
             const payload = {
                 punto: currentUser.punto,
                 municipio: currentUser.municipio || '',
                 regente: currentUser.regente,
+                auxiliar: auxiliar,
                 fecha: now.toLocaleDateString('es-CO'),
                 hora: now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: true }),
                 jornada: scheduleInfo.jornada,
@@ -740,9 +1308,16 @@
                 tempNevera: tempNevera,
                 tempAmbiente: tempAmb,
                 humedad: humedad,
+                cumpleNevera: resNevera.label,
+                cumpleAmbiente: resAmb.label,
+                cumpleHumedad: resHum.label,
                 estadoGeneral: estadoGeneral,
                 verificado: verificado,
-                acciones: acciones || 'N/A'
+                acciones: acciones || 'N/A',
+                termometroSerie: equiposInfo.termometroSerie || 'N/R',
+                termometroCalib: equiposInfo.termometroCalib || 'N/R',
+                termohigroSerie: equiposInfo.termohigroSerie || 'N/R',
+                termohigroCalib: equiposInfo.termohigroCalib || 'N/R'
             };
 
             const newRecord = { ...payload, id: Date.now() };
@@ -762,8 +1337,7 @@
             });
 
             document.getElementById('recordForm').reset();
-            toggleManualZona();
-            validateFormInputs();
+            handleZonaChange();
             renderTableRecords();
         }
 
@@ -791,17 +1365,16 @@
 
             emptyState.classList.add('hidden');
             tableBody.innerHTML = filteredRecords.map((r, idx) => {
-                const evalNev = evaluateValue(r.tempNevera, RANGES.nevera);
-                const evalAmb = evaluateValue(r.tempAmbiente, RANGES.ambiente);
-                const evalHum = evaluateValue(r.humedad, RANGES.humedad);
+                const evalNev = r.tempNevera !== 'N/A' ? evaluateValue(r.tempNevera, RANGES.nevera) : { colorClass: 'bg-slate-100 text-slate-400' };
+                const evalAmb = r.tempAmbiente !== 'N/A' ? evaluateValue(r.tempAmbiente, RANGES.ambiente) : { colorClass: 'bg-slate-100 text-slate-400' };
+                const evalHum = r.humedad !== 'N/A' ? evaluateValue(r.humedad, RANGES.humedad) : { colorClass: 'bg-slate-100 text-slate-400' };
 
                 let badgeGeneral = 'bg-emerald-100 text-emerald-800 border-emerald-300';
                 if (r.estadoGeneral === 'PREVENTIVO') badgeGeneral = 'bg-amber-100 text-amber-800 border-amber-300';
                 if (r.estadoGeneral === 'CRÍTICO') badgeGeneral = 'bg-rose-100 text-rose-800 border-rose-300 font-bold';
-                if (r.estadoGeneral === 'NO REALIZADO') badgeGeneral = 'bg-slate-800 text-white font-black border border-slate-900 animate-pulse';
 
                 const badgeVerificado = r.verificado === 'SÍ' 
-                    ? 'bg-teal-100 text-teal-800 border-teal-400 font-bold' 
+                    ? 'bg-teal-100 text-teal-400 border-teal-400 font-bold' 
                     : 'bg-slate-100 text-slate-500 border-slate-300';
 
                 return `
@@ -814,21 +1387,25 @@
                             <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-700 mb-0.5">${r.jornada}</span>
                             <div class="text-[11px] font-mono text-slate-500">${r.hora}</div>
                         </td>
+                        <td class="p-3">
+                            <div class="text-[11px] font-semibold text-slate-700">Toma: ${r.auxiliar || 'N/A'}</div>
+                            <div class="text-[10px] text-slate-400">Verifica: ${r.regente}</div>
+                        </td>
                         <td class="p-3 font-medium text-slate-700">${r.zona}</td>
                         <td class="p-3 text-center">
-                            <span class="inline-block px-2 py-1 rounded font-mono font-bold ${evalNev.colorClass}">${r.tempNevera} °C</span>
+                            <span class="inline-block px-2 py-1 rounded font-mono font-bold ${evalNev.colorClass}">${r.tempNevera !== 'N/A' ? r.tempNevera + ' °C' : 'N/A'}</span>
                         </td>
                         <td class="p-3 text-center">
-                            <span class="inline-block px-2 py-1 rounded font-mono font-bold ${evalAmb.colorClass}">${r.tempAmbiente} °C</span>
+                            <span class="inline-block px-2 py-1 rounded font-mono font-bold ${evalAmb.colorClass}">${r.tempAmbiente !== 'N/A' ? r.tempAmbiente + ' °C' : 'N/A'}</span>
                         </td>
                         <td class="p-3 text-center">
-                            <span class="inline-block px-2 py-1 rounded font-mono font-bold ${evalHum.colorClass}">${r.humedad} %</span>
+                            <span class="inline-block px-2 py-1 rounded font-mono font-bold ${evalHum.colorClass}">${r.humedad !== 'N/A' ? r.humedad + ' %' : 'N/A'}</span>
                         </td>
                         <td class="p-3 text-center">
                             <span class="inline-block px-2.5 py-1 rounded-full text-[10px] border ${badgeGeneral}">${r.estadoGeneral}</span>
                         </td>
                         <td class="p-3 text-center">
-                            <button onclick="toggleVerificadoRecord(${r.id})" title="Haga clic para cambiar estado de verificación" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] border shadow-sm transition hover:scale-105 ${badgeVerificado}">
+                            <button onclick="toggleVerificadoRecord(${r.id})" title="Haga clic para cambiar estado" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] border shadow-sm transition hover:scale-105 ${badgeVerificado}">
                                 <span>${r.verificado || 'NO'}</span>
                                 <i class="fa-solid ${r.verificado === 'SÍ' ? 'fa-check text-teal-600' : 'fa-minus text-slate-400'}"></i>
                             </button>
@@ -841,57 +1418,6 @@
             }).join('');
         }
 
-        // CONSTRUCTOR DINÁMICO DE LA PLANTILLA BPD (EF-FO-17, EF-FO-18, EF-FO-19)
-        function generateOfficialWorkbook(filteredRecords, punto, regente) {
-            const wb = XLSX.utils.book_new();
-            const currentMonthName = new Date().toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase();
-
-            const createSheet = (sheetTitle, formCode, equipmentName, valKey) => {
-                const rows = [
-                    ["MENNAR® OPERADOR LOGÍSTICO FARMACÉUTICO", "", "", "", "", "", "", "", "", "", "Código:", formCode],
-                    [sheetTitle, "", "", "", "", "", "", "", "", "", "Versión:", "2.0"],
-                    ["ESTABLECIMIENTO FARMACÉUTICO", "", "", "", "", "", "", "", "", "", "Vigencia:", "01.10.2024"],
-                    [],
-                    ["Mes:", currentMonthName, "", "Dispensario:", punto, "", "", "Equipo:", equipmentName, "", "Código Eq:", "TH-DIGITAL-01"],
-                    ["Responsable:", regente, "", "", "", "", "", "Verificador:", regente, "", "Ubicación:", "Área Dispensación"],
-                    [],
-                    ["Día", "Turno", "Medición Registrada", "Hora", "Zona / Ubicación", "Estado Cumplimiento", "Verificado", "Acciones Correctivas"]
-                ];
-
-                for (let d = 1; d <= 31; d++) {
-                    ["Mañana", "Tarde"].forEach(jornada => {
-                        const rec = filteredRecords.find(r => {
-                            const p = (r.fecha || "").split('/');
-                            return parseInt(p[0], 10) === d && r.jornada === jornada;
-                        });
-
-                        const val = rec ? rec[valKey] : "";
-                        rows.push([
-                            d,
-                            jornada === "Mañana" ? "M" : "T",
-                            typeof val === 'number' ? val : (val || ""),
-                            rec ? rec.hora : "",
-                            rec ? rec.zona : "",
-                            rec ? rec.estadoGeneral : "",
-                            rec ? (rec.verificado || "NO") : "",
-                            rec ? rec.acciones : ""
-                        ]);
-                    });
-                }
-
-                const ws = XLSX.utils.aoa_to_sheet(rows);
-                ws['!cols'] = [{ wch: 6 }, { wch: 6 }, { wch: 20 }, { wch: 12 }, { wch: 30 }, { wch: 18 }, { wch: 12 }, { wch: 45 }];
-                return ws;
-            };
-
-            XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE TEMPERATURA AMBIENTE', 'EF-FO-17', 'Termohigrómetro Digital', 'tempAmbiente'), 'EF-FO-17. TEMPERATURA');
-            XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE HUMEDAD RELATIVA', 'EF-FO-18', 'Termohigrómetro Digital', 'humedad'), 'EF-FO-18. HUMEDAD');
-            XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE CADENA DE FRÍO (NEVERA)', 'EF-FO-19', 'Termómetro Nevera', 'tempNevera'), 'EF-FO-19. CADENA DE FRÍO');
-
-            return wb;
-        }
-
-        // EXPORTACIÓN AUTÓNOMA E INMEDIATA
         function exportCSV() {
             const filteredRecords = allDatabaseRecords.filter(r => r.punto === currentUser.punto);
             if (filteredRecords.length === 0) {
@@ -900,25 +1426,62 @@
             }
 
             try {
-                const workbook = generateOfficialWorkbook(filteredRecords, currentUser.punto, currentUser.regente);
+                const wb = XLSX.utils.book_new();
+                const currentMonthName = new Date().toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase();
+                const eqInfo = equiposDatabase[currentUser.punto] || {};
+
+                const createSheet = (sheetTitle, formCode, equipmentName, equipmentCode, valKey) => {
+                    const rows = [
+                        ["MENNAR® OPERADOR LOGÍSTICO FARMACÉUTICO", "", "", "", "", "", "", "", "", "", "Código:", formCode],
+                        [sheetTitle, "", "", "", "", "", "", "", "", "", "Versión:", "2.0"],
+                        ["ESTABLECIMIENTO FARMACÉUTICO", "", "", "", "", "", "", "", "", "", "Vigencia:", "01.10.2024"],
+                        [],
+                        ["Mes:", currentMonthName, "", "Dispensario:", currentUser.punto, "", "", "Equipo:", equipmentName, "", "Serie Eq:", equipmentCode],
+                        ["Verificador (Regente):", currentUser.regente, "", "", "", "", "", "", "", "", "Ubicación:", "Área Dispensación"],
+                        [],
+                        ["Día", "Turno", "Medición Registrada", "Hora", "Zona / Ubicación", "Registrado Por (Auxiliar)", "Estado Cumplimiento", "Verificado", "Acciones Correctivas"]
+                    ];
+
+                    for (let d = 1; d <= 31; d++) {
+                        ["Mañana", "Tarde"].forEach(jornada => {
+                            const rec = filteredRecords.find(r => {
+                                const p = (r.fecha || "").split('/');
+                                return parseInt(p[0], 10) === d && r.jornada === jornada;
+                            });
+
+                            const val = rec ? rec[valKey] : "";
+                            rows.push([
+                                d,
+                                jornada === "Mañana" ? "M" : "T",
+                                typeof val === 'number' ? val : (val || "N/A"),
+                                rec ? rec.hora : "",
+                                rec ? rec.zona : "",
+                                rec ? (rec.auxiliar || "N/A") : "",
+                                rec ? rec.estadoGeneral : "",
+                                rec ? (rec.verificado || "NO") : "",
+                                rec ? rec.acciones : ""
+                            ]);
+                        });
+                    }
+
+                    const ws = XLSX.utils.aoa_to_sheet(rows);
+                    ws['!cols'] = [{ wch: 6 }, { wch: 6 }, { wch: 20 }, { wch: 12 }, { wch: 30 }, { wch: 25 }, { wch: 18 }, { wch: 12 }, { wch: 45 }];
+                    return ws;
+                };
+
+                XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE TEMPERATURA AMBIENTE', 'EF-FO-17', 'Termohigrómetro Digital', eqInfo.termohigroSerie || 'SN-N/R', 'tempAmbiente'), 'EF-FO-17. TEMPERATURA');
+                XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE HUMEDAD RELATIVA', 'EF-FO-18', 'Termohigrómetro Digital', eqInfo.termohigroSerie || 'SN-N/R', 'humedad'), 'EF-FO-18. HUMEDAD');
+                XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE CADENA DE FRÍO (NEVERA / CUARTO FRÍO)', 'EF-FO-19', 'Termómetro Nevera', eqInfo.termometroSerie || 'SN-N/R', 'tempNevera'), 'EF-FO-19. CADENA DE FRÍO');
+
                 const cleanPunto = currentUser.punto.replace(/[^a-zA-Z0-9]/g, '_');
                 const fileName = `EF-FO-17,18,19_Control_TH_${cleanPunto}.xlsx`;
 
-                XLSX.writeFile(workbook, fileName);
-                showToast('Exportación Exitosa', 'El archivo Excel con sus 3 pestañas BPD oficiales se ha generado y descargado.');
+                XLSX.writeFile(wb, fileName);
+                showToast('Exportación Exitosa', 'El archivo Excel oficial (.xlsx) ha sido generado.');
 
             } catch (err) {
-                console.error("Error en la descarga de Excel:", err);
-                showToast('Error de Exportación', 'Ocurrió una novedad al generar el archivo.', 'error');
-            }
-        }
-
-        function clearPuntoData() {
-            if (confirm(`¿Está seguro de borrar los registros locales del punto ${currentUser.punto}?`)) {
-                allDatabaseRecords = allDatabaseRecords.filter(r => r.punto !== currentUser.punto);
-                localStorage.setItem('mennar_farmacia_records', JSON.stringify(allDatabaseRecords));
-                renderTableRecords();
-                showToast('Limpieza completada', 'Registros locales de este punto eliminados.');
+                console.error("Error al generar descarga:", err);
+                showToast('Error de Exportación', 'Ocurrió un error al generar la descarga.', 'error');
             }
         }
 
