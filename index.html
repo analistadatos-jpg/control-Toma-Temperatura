@@ -87,7 +87,7 @@
                 </div>
             </div>
 
-            <!-- Reloj del Sistema (Sin opción de simulación) -->
+            <!-- Reloj en Tiempo Real Único -->
             <div class="flex items-center bg-slate-800/80 px-4 py-1.5 rounded-lg border border-slate-700">
                 <div class="text-right">
                     <div class="text-xs text-slate-400 font-medium">Reloj del Sistema</div>
@@ -112,7 +112,7 @@
     <!-- Main Container -->
     <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow">
 
-        <!-- DASHBOARD GENERAL -->
+        <!-- DASHBOARD GENERAL BPD (SUPERVISIÓN) -->
         <section id="globalDashboardSection" class="hidden space-y-6">
             <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -218,7 +218,7 @@
             </div>
         </section>
 
-        <!-- LOGIN -->
+        <!-- INGRESO A ESTABLECIMIENTO -->
         <section id="loginSection" class="max-w-md mx-auto my-8 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all">
             <div class="bg-slate-900 p-6 text-white text-center border-b border-slate-800">
                 <div class="inline-flex items-center justify-center bg-white p-2.5 rounded-xl mb-3 shadow-md border border-slate-100">
@@ -237,19 +237,19 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Regente del Punto (Verificador)</label>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Responsable / Regente del Registro</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                            <i class="fa-regular fa-user-check"></i>
+                            <i class="fa-regular fa-user"></i>
                         </span>
-                        <input type="text" id="regenteInput" placeholder="Nombre del Regente" required class="w-full pl-9 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none">
+                        <input type="text" id="regenteInput" placeholder="Nombre completo del Regente" required class="w-full pl-9 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none">
                     </div>
                 </div>
 
                 <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start space-x-2">
                     <i class="fa-solid fa-shield-halved text-blue-600 text-sm mt-0.5"></i>
                     <p class="text-xs text-blue-800 leading-tight">
-                        <strong>Sincronización Automática:</strong> Cada punto remitirá la información automáticamente a su hoja propia en Google Sheets.
+                        <strong>Aislamiento de Información:</strong> Cada persona solo tendrá acceso y control sobre los datos remitidos a su sede correspondiente.
                     </p>
                 </div>
 
@@ -468,7 +468,7 @@
                     </form>
                 </div>
 
-                <!-- TABLA HISTÓRICA -->
+                <!-- TABLA HISTÓRICA DE PUNTO -->
                 <div class="lg:col-span-8 space-y-4">
 
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -479,7 +479,7 @@
                         <div class="flex items-center space-x-2 flex-wrap gap-2">
                             <button onclick="exportCSV()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
                                 <i class="fa-solid fa-file-excel"></i>
-                                <span>Exportar Excel (.xlsx)</span>
+                                <span>Exportar Formato Oficial Excel (.xlsx)</span>
                             </button>
                         </div>
                     </div>
@@ -622,6 +622,8 @@
             document.getElementById('dashFilterDate').value = `${year}-${month}-${day}`;
 
             fetchEquiposStateFromDrive();
+            
+            // SIEMPRE INICIA EN LA PANTALLA DE SELECCIÓN DE ESTABLECIMIENTO
             logout(false);
         };
 
@@ -637,7 +639,7 @@
                         }
                     }
                 })
-                .catch(err => console.warn("Sincronización en línea de equipos no disponible offline:", err));
+                .catch(err => console.warn("Sincronización en línea no disponible offline:", err));
         }
 
         function populatePuntosSelect() {
@@ -1343,7 +1345,7 @@
                 if (r.estadoGeneral === 'CRÍTICO') badgeGeneral = 'bg-rose-100 text-rose-800 border-rose-300 font-bold';
 
                 const badgeVerificado = r.verificado === 'SÍ' 
-                    ? 'bg-teal-100 text-teal-400 border-teal-400 font-bold' 
+                    ? 'bg-teal-100 text-teal-800 border-teal-400 font-bold' 
                     : 'bg-slate-100 text-slate-500 border-slate-300';
 
                 return `
