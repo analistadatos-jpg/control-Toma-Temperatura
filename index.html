@@ -87,24 +87,11 @@
                 </div>
             </div>
 
-            <!-- Reloj y Simulación -->
-            <div class="flex items-center bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 space-x-4">
+            <!-- Reloj del Sistema (Sin opción de simulación) -->
+            <div class="flex items-center bg-slate-800/80 px-4 py-1.5 rounded-lg border border-slate-700">
                 <div class="text-right">
                     <div class="text-xs text-slate-400 font-medium">Reloj del Sistema</div>
                     <div id="liveClock" class="font-mono text-sm font-semibold text-emerald-400">00:00:00 AM</div>
-                </div>
-                <div class="h-6 w-px bg-slate-700"></div>
-                <div class="flex items-center space-x-2">
-                    <label for="simTimeSelect" class="text-xs text-slate-300 flex items-center gap-1">
-                        <i class="fa-solid fa-flask text-amber-400"></i>
-                        <span>Simulación:</span>
-                    </label>
-                    <select id="simTimeSelect" onchange="toggleSimulatedTime()" class="bg-slate-900 text-xs text-white border border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-teal-400">
-                        <option value="REAL">Tiempo Real (Actual)</option>
-                        <option value="MORNING">09:30 AM (Horario Permitido)</option>
-                        <option value="AFTERNOON">03:30 PM (Horario Permitido)</option>
-                        <option value="BLOCKED">11:15 AM (Fuera de Horario - Bloqueado)</option>
-                    </select>
                 </div>
             </div>
 
@@ -611,7 +598,6 @@
         ];
 
         let currentUser = null; 
-        let timeSimulationMode = 'REAL'; 
         let allDatabaseRecords = JSON.parse(localStorage.getItem('mennar_farmacia_records')) || [];
         let equiposDatabase = {};
 
@@ -639,7 +625,6 @@
             logout(false);
         };
 
-        // CONSULTAR ESTADO REAL EN LÍNEA DESDE GOOGLE DRIVE
         function fetchEquiposStateFromDrive() {
             fetch(`${GOOGLE_SCRIPT_URL}?action=getEquiposState`)
                 .then(res => res.json())
@@ -980,11 +965,7 @@
         }
 
         function getCurrentDateTime() {
-            const now = new Date();
-            if (timeSimulationMode === 'MORNING') now.setHours(9, 30, 0);
-            else if (timeSimulationMode === 'AFTERNOON') now.setHours(15, 30, 0);
-            else if (timeSimulationMode === 'BLOCKED') now.setHours(11, 15, 0);
-            return now;
+            return new Date();
         }
 
         function startLiveClock() {
@@ -997,18 +978,6 @@
                     evaluateScheduleRestrictions();
                 }
             }, 1000);
-        }
-
-        function toggleSimulatedTime() {
-            timeSimulationMode = document.getElementById('simTimeSelect').value;
-            const now = getCurrentDateTime();
-            const timeString = now.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-            document.getElementById('liveClock').innerText = timeString;
-            
-            if (currentUser) {
-                evaluateScheduleRestrictions();
-            }
-            showToast('Modo Simulación', `Hora ajustada a: ${timeString}`);
         }
 
         function isWithinAllowedSchedule() {
