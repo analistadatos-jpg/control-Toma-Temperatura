@@ -74,7 +74,7 @@
             
             <div class="flex items-center space-x-3">
                 <button onclick="toggleDashboardView()" class="bg-teal-600 hover:bg-teal-500 text-white px-3.5 py-2 rounded-xl font-bold text-xs transition flex items-center space-x-2 shadow-lg hover:scale-105 transform">
-                    <i class="fa-solid fa-chart-line text-amber-300"></i>
+                    <i class="fa-solid fa-lock text-amber-300"></i>
                     <span>Dashboard BPD 3D</span>
                 </button>
 
@@ -87,8 +87,8 @@
                 </div>
             </div>
 
-            <!-- Reloj en Tiempo Real Único -->
-            <div class="flex items-center bg-slate-800/80 px-4 py-1.5 rounded-lg border border-slate-700">
+            <!-- Reloj del Sistema -->
+            <div class="flex items-center bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
                 <div class="text-right">
                     <div class="text-xs text-slate-400 font-medium">Reloj del Sistema</div>
                     <div id="liveClock" class="font-mono text-sm font-semibold text-emerald-400">00:00:00 AM</div>
@@ -112,7 +112,7 @@
     <!-- Main Container -->
     <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-grow">
 
-        <!-- DASHBOARD GENERAL BPD (SUPERVISIÓN) -->
+        <!-- DASHBOARD GENERAL -->
         <section id="globalDashboardSection" class="hidden space-y-6">
             <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -124,6 +124,18 @@
                 </div>
 
                 <div class="flex items-center gap-3 flex-wrap">
+                    <!-- SEGMENTACIÓN POR PUNTO DE SERVICIO -->
+                    <div class="flex items-center bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 space-x-2">
+                        <label for="dashFilterPunto" class="text-xs text-slate-300 font-semibold flex items-center gap-1">
+                            <i class="fa-solid fa-filter text-amber-400"></i>
+                            <span>Punto:</span>
+                        </label>
+                        <select id="dashFilterPunto" onchange="renderGlobalDashboardData()" class="bg-slate-900 text-xs text-white border border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-teal-400 max-w-[200px]">
+                            <option value="ALL">-- Todos los Puntos --</option>
+                        </select>
+                    </div>
+
+                    <!-- FILTRO DE FECHA -->
                     <div class="flex items-center bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 space-x-2">
                         <label for="dashFilterDate" class="text-xs text-slate-300 font-semibold flex items-center gap-1">
                             <i class="fa-regular fa-calendar-days text-teal-400"></i>
@@ -131,6 +143,12 @@
                         </label>
                         <input type="date" id="dashFilterDate" onchange="renderGlobalDashboardData()" class="bg-slate-900 text-xs text-white border border-slate-600 rounded px-2 py-1 focus:outline-none focus:border-teal-400">
                     </div>
+
+                    <!-- REPORTE DE DESCARGA (.XLSX) AGREGADO AL DASHBOARD -->
+                    <button onclick="exportCSVFromDashboard()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5 shadow-md">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span>Exportar Excel (.xlsx)</span>
+                    </button>
 
                     <button onclick="exportAuditoriaExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md">
                         <i class="fa-solid fa-file-excel"></i>
@@ -148,7 +166,7 @@
                 <div class="card-3d p-4 border-l-4 border-slate-800">
                     <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Puntos Monitoreados</div>
                     <div id="dashTotalPuntos" class="text-3xl font-extrabold text-slate-800 mt-1">0</div>
-                    <div class="text-[11px] text-slate-400 mt-1">Sedes registradas en el sistema</div>
+                    <div class="text-[11px] text-slate-400 mt-1">Sedes evaluadas en el filtro</div>
                 </div>
 
                 <div class="card-3d p-4 border-l-4 border-teal-500">
@@ -170,7 +188,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN DE GRÁFICOS VISUALES 3D -->
+            <!-- GRÁFICOS VISUALES -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
                 <div class="lg:col-span-5 chart-container-3d border border-slate-200">
                     <h3 class="font-bold text-xs uppercase text-slate-700 tracking-wider mb-4 flex items-center justify-between">
@@ -193,7 +211,7 @@
                 </div>
             </div>
 
-            <!-- Tabla de Cumplimiento por Punto de Servicio -->
+            <!-- Tabla de Cumplimiento por Punto -->
             <div class="card-3d overflow-hidden border border-slate-200">
                 <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                     <h3 class="font-bold text-xs uppercase text-slate-700 tracking-wider">Supervisión Diario de Tomas por Punto (2 Frecuencias al Día)</h3>
@@ -218,7 +236,7 @@
             </div>
         </section>
 
-        <!-- INGRESO A ESTABLECIMIENTO -->
+        <!-- LOGIN -->
         <section id="loginSection" class="max-w-md mx-auto my-8 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden transition-all">
             <div class="bg-slate-900 p-6 text-white text-center border-b border-slate-800">
                 <div class="inline-flex items-center justify-center bg-white p-2.5 rounded-xl mb-3 shadow-md border border-slate-100">
@@ -237,19 +255,19 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Responsable / Regente del Registro</label>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Regente del Punto (Verificador)</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                            <i class="fa-regular fa-user"></i>
+                            <i class="fa-regular fa-user-check"></i>
                         </span>
-                        <input type="text" id="regenteInput" placeholder="Nombre completo del Regente" required class="w-full pl-9 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none">
+                        <input type="text" id="regenteInput" placeholder="Nombre del Regente" required class="w-full pl-9 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none">
                     </div>
                 </div>
 
                 <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start space-x-2">
                     <i class="fa-solid fa-shield-halved text-blue-600 text-sm mt-0.5"></i>
                     <p class="text-xs text-blue-800 leading-tight">
-                        <strong>Aislamiento de Información:</strong> Cada persona solo tendrá acceso y control sobre los datos remitidos a su sede correspondiente.
+                        <strong>Sincronización Automática:</strong> Cada punto remitirá la información automáticamente a su hoja propia en Google Sheets.
                     </p>
                 </div>
 
@@ -279,53 +297,50 @@
                 </div>
             </div>
 
-            <!-- GESTIÓN DE EQUIPOS -->
+            <!-- GESTIÓN DE EQUIPOS CON LISTAS DESPLEGABLES / ACORDEONES -->
             <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
-                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
                     <div class="flex items-center space-x-2">
                         <i class="fa-solid fa-microchip text-teal-600"></i>
-                        <h3 class="font-bold text-slate-800 text-sm">Gestión de Equipos de Medición (Termómetros / Termohigrómetros)</h3>
+                        <h3 class="font-bold text-slate-800 text-sm">Gestión de Equipos de Medición (Termómetros y Termohigrómetros)</h3>
                     </div>
                     <span id="equiposStatusBadge" class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-medium">Registrar / Editar</span>
                 </div>
 
-                <form id="equiposForm" onsubmit="saveEquiposInfo(event)" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <h4 class="text-xs font-bold text-slate-700 uppercase mb-2 flex items-center gap-1">
-                            <i class="fa-solid fa-temperature-low text-blue-600"></i> Termómetros (Cadena de Frío)
-                        </h4>
-                        <div class="space-y-2">
-                            <div>
-                                <label class="text-[11px] font-semibold text-slate-600">N° Serie / Código ID</label>
-                                <input type="text" id="eqTermometroSerie" placeholder="Ej: TH-NEV-01 / SN-88392" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs outline-none focus:border-teal-500">
-                            </div>
-                            <div>
-                                <label class="text-[11px] font-semibold text-slate-600">Fecha Última Calibración</label>
-                                <input type="date" id="eqTermometroFechaCalib" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs outline-none focus:border-teal-500">
-                            </div>
+                <form id="equiposForm" onsubmit="saveEquiposInfo(event)" class="space-y-4">
+                    
+                    <!-- DESPLEGABLE TERMÓMETROS (5 EQUIPOS) -->
+                    <details class="bg-slate-50 rounded-xl border border-slate-200 group overflow-hidden">
+                        <summary class="p-3.5 flex justify-between items-center cursor-pointer select-none font-bold text-xs text-slate-700 uppercase bg-slate-100/80 hover:bg-slate-200/60 transition">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-temperature-low text-blue-600"></i>
+                                <span>Termómetros - Cadena de Frío (Hasta 5 Equipos)</span>
+                            </span>
+                            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="containerTermometros">
+                            <!-- Inyección JS -->
                         </div>
-                    </div>
+                    </details>
 
-                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
-                        <h4 class="text-xs font-bold text-slate-700 uppercase mb-2 flex items-center gap-1">
-                            <i class="fa-solid fa-droplet text-teal-600"></i> Termohigrómetro (Ambiente y Humedad)
-                        </h4>
-                        <div class="space-y-2">
-                            <div>
-                                <label class="text-[11px] font-semibold text-slate-600">N° Serie / Código ID</label>
-                                <input type="text" id="eqTermohigroSerie" placeholder="Ej: TH-AMB-01 / SN-10294" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs outline-none focus:border-teal-500">
-                            </div>
-                            <div>
-                                <label class="text-[11px] font-semibold text-slate-600">Fecha Última Calibración</label>
-                                <input type="date" id="eqTermohigroFechaCalib" class="w-full bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs outline-none focus:border-teal-500">
-                            </div>
+                    <!-- DESPLEGABLE TERMOHIGRÓMETROS (10 EQUIPOS) -->
+                    <details class="bg-slate-50 rounded-xl border border-slate-200 group overflow-hidden">
+                        <summary class="p-3.5 flex justify-between items-center cursor-pointer select-none font-bold text-xs text-slate-700 uppercase bg-slate-100/80 hover:bg-slate-200/60 transition">
+                            <span class="flex items-center gap-2">
+                                <i class="fa-solid fa-droplet text-teal-600"></i>
+                                <span>Termohigrómetros - Ambiente y Humedad (Hasta 10 Equipos)</span>
+                            </span>
+                            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform"></i>
+                        </summary>
+                        <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3" id="containerTermohigrometros">
+                            <!-- Inyección JS -->
                         </div>
-                    </div>
+                    </details>
 
-                    <div class="md:col-span-2 flex justify-end">
-                        <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-lg font-semibold shadow transition flex items-center gap-1.5">
+                    <div class="flex justify-end pt-2">
+                        <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-5 py-2.5 rounded-lg font-semibold shadow transition flex items-center gap-2">
                             <i class="fa-solid fa-floppy-disk"></i>
-                            <span>Guardar Información de Equipos</span>
+                            <span>Guardar Registro de Todos los Equipos</span>
                         </button>
                     </div>
                 </form>
@@ -468,7 +483,7 @@
                     </form>
                 </div>
 
-                <!-- TABLA HISTÓRICA DE PUNTO -->
+                <!-- TABLA HISTÓRICA -->
                 <div class="lg:col-span-8 space-y-4">
 
                     <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -479,7 +494,12 @@
                         <div class="flex items-center space-x-2 flex-wrap gap-2">
                             <button onclick="exportCSV()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
                                 <i class="fa-solid fa-file-excel"></i>
-                                <span>Exportar Formato Oficial Excel (.xlsx)</span>
+                                <span>Exportar Excel (.xlsx)</span>
+                            </button>
+                            
+                            <button onclick="clearPuntoData()" class="bg-slate-100 hover:bg-amber-50 text-slate-600 hover:text-amber-600 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium transition" title="Borrar registros locales de la app">
+                                <i class="fa-solid fa-eraser"></i>
+                                <span>Limpiar App</span>
                             </button>
                         </div>
                     </div>
@@ -598,6 +618,7 @@
         ];
 
         let currentUser = null; 
+        let isDashboardAuthenticated = false;
         let allDatabaseRecords = JSON.parse(localStorage.getItem('mennar_farmacia_records')) || [];
         let equiposDatabase = {};
 
@@ -611,6 +632,7 @@
         };
 
         window.onload = function() {
+            generateEquiposFormFields();
             populatePuntosSelect();
             startLiveClock();
             handleZonaChange();
@@ -622,10 +644,54 @@
             document.getElementById('dashFilterDate').value = `${year}-${month}-${day}`;
 
             fetchEquiposStateFromDrive();
-            
-            // SIEMPRE INICIA EN LA PANTALLA DE SELECCIÓN DE ESTABLECIMIENTO
             logout(false);
         };
+
+        function generateEquiposFormFields() {
+            const containerTN = document.getElementById('containerTermometros');
+            let htmlTN = '';
+            for (let i = 1; i <= 5; i++) {
+                htmlTN += `
+                    <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-sm space-y-2">
+                        <div class="flex justify-between items-center border-b pb-1 border-slate-100">
+                            <span class="text-[11px] font-bold text-blue-700 uppercase">Termómetro ${i}</span>
+                            <i class="fa-solid fa-microchip text-slate-300 text-xs"></i>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-semibold block mb-0.5">N° Serie / Código ID</label>
+                            <input type="text" id="eqTermometroSerie_${i}" placeholder="SN / Código ID" class="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1 text-xs outline-none focus:border-teal-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-semibold block mb-0.5">Fecha Última Calibración</label>
+                            <input type="date" id="eqTermometroFechaCalib_${i}" class="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1 text-xs outline-none focus:border-teal-500">
+                        </div>
+                    </div>
+                `;
+            }
+            containerTN.innerHTML = htmlTN;
+
+            const containerTH = document.getElementById('containerTermohigrometros');
+            let htmlTH = '';
+            for (let j = 1; j <= 10; j++) {
+                htmlTH += `
+                    <div class="p-3 bg-white rounded-lg border border-slate-200 shadow-sm space-y-2">
+                        <div class="flex justify-between items-center border-b pb-1 border-slate-100">
+                            <span class="text-[11px] font-bold text-teal-700 uppercase">Termohigrómetro ${j}</span>
+                            <i class="fa-solid fa-droplet text-slate-300 text-xs"></i>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-semibold block mb-0.5">N° Serie / Código ID</label>
+                            <input type="text" id="eqTermohigroSerie_${j}" placeholder="SN / Código ID" class="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1 text-xs outline-none focus:border-teal-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-semibold block mb-0.5">Fecha Última Calibración</label>
+                            <input type="date" id="eqTermohigroFechaCalib_${j}" class="w-full bg-slate-50 border border-slate-300 rounded px-2.5 py-1 text-xs outline-none focus:border-teal-500">
+                        </div>
+                    </div>
+                `;
+            }
+            containerTH.innerHTML = htmlTH;
+        }
 
         function fetchEquiposStateFromDrive() {
             fetch(`${GOOGLE_SCRIPT_URL}?action=getEquiposState`)
@@ -639,17 +705,28 @@
                         }
                     }
                 })
-                .catch(err => console.warn("Sincronización en línea no disponible offline:", err));
+                .catch(err => console.warn("Sincronización de equipos no disponible offline:", err));
         }
 
         function populatePuntosSelect() {
-            const select = document.getElementById('puntoSelect');
-            select.innerHTML = '<option value="" disabled selected>-- Seleccione su establecimiento --</option>';
+            const selectLogin = document.getElementById('puntoSelect');
+            const selectDash = document.getElementById('dashFilterPunto');
+
+            selectLogin.innerHTML = '<option value="" disabled selected>-- Seleccione su establecimiento --</option>';
+            selectDash.innerHTML = '<option value="ALL">-- Todos los Puntos --</option>';
+
             PUNTOS_BD.forEach((item, index) => {
-                const opt = document.createElement('option');
-                opt.value = index;
-                opt.textContent = `${item.area} (${item.municipio})`;
-                select.appendChild(opt);
+                const puntoNombre = `${item.area} (${item.municipio})`;
+
+                const optLogin = document.createElement('option');
+                optLogin.value = index;
+                optLogin.textContent = puntoNombre;
+                selectLogin.appendChild(optLogin);
+
+                const optDash = document.createElement('option');
+                optDash.value = puntoNombre;
+                optDash.textContent = puntoNombre;
+                selectDash.appendChild(optDash);
             });
         }
 
@@ -745,6 +822,19 @@
             const appDashboard = document.getElementById('appDashboard');
 
             if (dashSection.classList.contains('hidden')) {
+                if (!isDashboardAuthenticated) {
+                    const password = prompt("🔐 ACCESO RESTRINGIDO - GESTIÓN DE CALIDAD\n\nPor favor ingrese la clave de acceso al Dashboard:");
+                    if (password === "Calidad_2026") {
+                        isDashboardAuthenticated = true;
+                        showToast('Acceso Concedido', 'Bienvenido al Dashboard BPD 3D');
+                    } else if (password !== null) {
+                        showToast('Acceso Denegado', 'Contraseña incorrecta.', 'error');
+                        return;
+                    } else {
+                        return;
+                    }
+                }
+
                 dashSection.classList.remove('hidden');
                 loginSection.classList.add('hidden');
                 appDashboard.classList.add('hidden');
@@ -771,9 +861,16 @@
 
         function renderGlobalDashboardData() {
             const targetDateStr = getSelectedDashDateFormatted();
+            const selectedPuntoFilter = document.getElementById('dashFilterPunto').value;
+
             document.getElementById('dashFechaLabel').innerText = `Fecha de evaluación: ${targetDateStr}`;
 
-            const totalPuntos = PUNTOS_BD.length;
+            let listToProcess = PUNTOS_BD;
+            if (selectedPuntoFilter !== "ALL") {
+                listToProcess = PUNTOS_BD.filter(p => `${p.area} (${p.municipio})` === selectedPuntoFilter);
+            }
+
+            const totalPuntos = listToProcess.length;
 
             let completadosDosTomas = 0;
             let alertasCount = 0;
@@ -785,7 +882,7 @@
             const tbody = document.getElementById('dashTableBody');
             tbody.innerHTML = '';
 
-            PUNTOS_BD.forEach(p => {
+            listToProcess.forEach(p => {
                 const puntoNombre = `${p.area} (${p.municipio})`;
                 const recordsPunto = allDatabaseRecords.filter(r => r.punto === puntoNombre);
                 
@@ -797,6 +894,20 @@
 
                 const eqInfo = equiposDatabase[puntoNombre] || {};
                 const hasEquipos = Boolean(eqInfo.registrado);
+
+                let detalleEquipos = [];
+                for (let t = 1; t <= 5; t++) {
+                    const s = eqInfo[`termometroSerie_${t}`];
+                    if (s && s !== 'N/R') detalleEquipos.push(`TN${t}: ${s}`);
+                }
+                for (let th = 1; th <= 10; th++) {
+                    const sTH = eqInfo[`termohigroSerie_${th}`];
+                    if (sTH && sTH !== 'N/R') detalleEquipos.push(`TH${th}: ${sTH}`);
+                }
+
+                const resumenEquiposTexto = detalleEquipos.length > 0 
+                    ? detalleEquipos.join(' | ') 
+                    : 'Sin equipos parametrizados';
 
                 const hasBoth = regMorning && regAfternoon;
                 if (hasBoth) completadosDosTomas++;
@@ -833,10 +944,13 @@
                                 ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[11px] font-bold">✓ ${regAfternoon.hora}</span>` 
                                 : `<span class="bg-slate-100 text-slate-400 px-2 py-0.5 rounded text-[11px]">Pendiente</span>`}
                         </td>
-                        <td class="p-3 text-center">
+                        <td class="p-3 text-center" title="${resumenEquiposTexto}">
                             ${hasEquipos 
-                                ? `<span class="text-teal-600 font-semibold">✓ Registrado</span>` 
-                                : `<span class="text-amber-600 font-semibold">⚠️ Sin registrar</span>`}
+                                ? `<div class="flex flex-col items-center">
+                                     <span class="text-teal-700 font-bold text-[11px]">✓ ${detalleEquipos.length} Equipos</span>
+                                     <span class="text-[9px] text-slate-400 max-w-[150px] truncate">${resumenEquiposTexto}</span>
+                                   </div>` 
+                                : `<span class="text-amber-600 font-semibold text-[11px]">⚠️ Sin registrar</span>`}
                         </td>
                         <td class="p-3 text-center">
                             <span class="inline-block px-2.5 py-1 rounded-full text-[10px] border ${estadoPuntoClass}">${estadoPuntoText}</span>
@@ -911,6 +1025,12 @@
 
         function exportAuditoriaExcel() {
             const targetDateStr = getSelectedDashDateFormatted();
+            const selectedPuntoFilter = document.getElementById('dashFilterPunto').value;
+
+            let listToProcess = PUNTOS_BD;
+            if (selectedPuntoFilter !== "ALL") {
+                listToProcess = PUNTOS_BD.filter(p => `${p.area} (${p.municipio})` === selectedPuntoFilter);
+            }
 
             try {
                 const wb = XLSX.utils.book_new();
@@ -919,11 +1039,12 @@
                     ["MENNAR® OPERADOR LOGÍSTICO FARMACÉUTICO"],
                     ["INFORME DE AUDITORÍA Y CUMPLIMIENTO DIARIO DE TOMAS BPD"],
                     [`Fecha Evaluada: ${targetDateStr}`, "", "", "", "", `Fecha Generación: ${new Date().toLocaleString('es-CO')}`],
+                    [`Filtro Aplicado: ${selectedPuntoFilter === "ALL" ? "TODOS LOS PUNTOS" : selectedPuntoFilter}`],
                     [],
-                    ["N°", "Punto de Servicio", "Municipio", "Regente Responsable", "Toma Mañana", "Hora Mañana", "Toma Tarde", "Hora Tarde", "Cumplimiento Diarios (2 Tomas)", "Estado Equipos"]
+                    ["N°", "Punto de Servicio", "Municipio", "Regente Responsable", "Toma Mañana", "Hora Mañana", "Toma Tarde", "Hora Tarde", "Cumplimiento Diarios (2 Tomas)", "Estado Equipos", "Detalle Equipos Registrados (10 TH / 5 TN)"]
                 ];
 
-                PUNTOS_BD.forEach((p, idx) => {
+                listToProcess.forEach((p, idx) => {
                     const puntoNombre = `${p.area} (${p.municipio})`;
                     const recordsPunto = allDatabaseRecords.filter(r => r.punto === puntoNombre);
 
@@ -932,6 +1053,16 @@
 
                     const eqInfo = equiposDatabase[puntoNombre] || {};
                     const hasEquipos = Boolean(eqInfo.registrado);
+
+                    let detalleEq = [];
+                    for (let t = 1; t <= 5; t++) {
+                        const s = eqInfo[`termometroSerie_${t}`];
+                        if (s && s !== 'N/R') detalleEq.push(`TN${t}: ${s}`);
+                    }
+                    for (let th = 1; th <= 10; th++) {
+                        const sTH = eqInfo[`termohigroSerie_${th}`];
+                        if (sTH && sTH !== 'N/R') detalleEq.push(`TH${th}: ${sTH}`);
+                    }
 
                     const hasBoth = regMorning && regAfternoon;
                     let estadoCumpli = "CUMPLIÓ (2/2)";
@@ -947,12 +1078,13 @@
                         regAfternoon ? "REGISTRADO" : "PENDIENTE",
                         regAfternoon ? regAfternoon.hora : "N/A",
                         estadoCumpli,
-                        hasEquipos ? "REGISTRADOS" : "PENDIENTES"
+                        hasEquipos ? "REGISTRADOS" : "PENDIENTES",
+                        detalleEq.length > 0 ? detalleEq.join(" | ") : "N/R"
                     ]);
                 });
 
                 const ws = XLSX.utils.aoa_to_sheet(rowsReport);
-                ws['!cols'] = [{ wch: 5 }, { wch: 35 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 25 }, { wch: 18 }];
+                ws['!cols'] = [{ wch: 5 }, { wch: 35 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 25 }, { wch: 18 }, { wch: 50 }];
 
                 XLSX.utils.book_append_sheet(wb, ws, "Auditoria_Cumplimiento");
 
@@ -1144,10 +1276,20 @@
         function loadEquiposInfo() {
             if (!currentUser) return;
             const info = equiposDatabase[currentUser.punto] || {};
-            document.getElementById('eqTermometroSerie').value = (info.termometroSerie && info.termometroSerie !== 'N/R') ? info.termometroSerie : '';
-            document.getElementById('eqTermometroFechaCalib').value = (info.termometroCalib && info.termometroCalib !== 'N/R') ? info.termometroCalib : '';
-            document.getElementById('eqTermohigroSerie').value = (info.termohigroSerie && info.termohigroSerie !== 'N/R') ? info.termohigroSerie : '';
-            document.getElementById('eqTermohigroFechaCalib').value = (info.termohigroCalib && info.termohigroCalib !== 'N/R') ? info.termohigroCalib : '';
+
+            for (let i = 1; i <= 5; i++) {
+                const s = info[`termometroSerie_${i}`];
+                const c = info[`termometroCalib_${i}`];
+                document.getElementById(`eqTermometroSerie_${i}`).value = (s && s !== 'N/R') ? s : '';
+                document.getElementById(`eqTermometroFechaCalib_${i}`).value = (c && c !== 'N/R') ? c : '';
+            }
+
+            for (let j = 1; j <= 10; j++) {
+                const s = info[`termohigroSerie_${j}`];
+                const c = info[`termohigroCalib_${j}`];
+                document.getElementById(`eqTermohigroSerie_${j}`).value = (s && s !== 'N/R') ? s : '';
+                document.getElementById(`eqTermohigroFechaCalib_${j}`).value = (c && c !== 'N/R') ? c : '';
+            }
 
             const badge = document.getElementById('equiposStatusBadge');
             if (info.registrado) {
@@ -1163,26 +1305,39 @@
             e.preventDefault();
             if (!currentUser) return;
 
-            const termometroSerie = document.getElementById('eqTermometroSerie').value.trim();
-            const termometroCalib = document.getElementById('eqTermometroFechaCalib').value;
-            const termohigroSerie = document.getElementById('eqTermohigroSerie').value.trim();
-            const termohigroCalib = document.getElementById('eqTermohigroFechaCalib').value;
+            const info = { registrado: false };
 
-            const registrado = Boolean(termometroSerie || termohigroSerie);
+            for (let i = 1; i <= 5; i++) {
+                const inputSerie = document.getElementById(`eqTermometroSerie_${i}`);
+                const inputCalib = document.getElementById(`eqTermometroFechaCalib_${i}`);
 
-            const info = {
-                termometroSerie: termometroSerie || 'N/R',
-                termometroCalib: termometroCalib || 'N/R',
-                termohigroSerie: termohigroSerie || 'N/R',
-                termohigroCalib: termohigroCalib || 'N/R',
-                registrado: registrado
-            };
+                const serieVal = inputSerie ? inputSerie.value.trim() : '';
+                const calibVal = inputCalib ? inputCalib.value : '';
+
+                info[`termometroSerie_${i}`] = serieVal || 'N/R';
+                info[`termometroCalib_${i}`] = calibVal || 'N/R';
+
+                if (serieVal) info.registrado = true;
+            }
+
+            for (let j = 1; j <= 10; j++) {
+                const inputSerieTH = document.getElementById(`eqTermohigroSerie_${j}`);
+                const inputCalibTH = document.getElementById(`eqTermohigroFechaCalib_${j}`);
+
+                const serieTHVal = inputSerieTH ? inputSerieTH.value.trim() : '';
+                const calibTHVal = inputCalibTH ? inputCalibTH.value : '';
+
+                info[`termohigroSerie_${j}`] = serieTHVal || 'N/R';
+                info[`termohigroCalib_${j}`] = calibTHVal || 'N/R';
+
+                if (serieTHVal) info.registrado = true;
+            }
 
             equiposDatabase[currentUser.punto] = info;
             localStorage.setItem('mennar_equipos_records', JSON.stringify(equiposDatabase));
             loadEquiposInfo();
 
-            showToast('Procesando...', 'Sincronizando equipos con Google Sheets...');
+            showToast('Procesando...', 'Sincronizando todos los equipos con Google Sheets...');
 
             fetch(GOOGLE_SCRIPT_URL, {
                 method: 'POST',
@@ -1191,17 +1346,14 @@
                 body: JSON.stringify({
                     action: 'updateEquipos',
                     punto: currentUser.punto,
-                    termometroSerie: info.termometroSerie,
-                    termometroCalib: info.termometroCalib,
-                    termohigroSerie: info.termohigroSerie,
-                    termohigroCalib: info.termohigroCalib
+                    equipos: info
                 })
             }).then(() => {
-                showToast('Equipos Actualizados', 'Información sincronizada en Google Sheets.');
+                showToast('Equipos Actualizados', 'Todos los equipos se actualizaron en Google Sheets.');
                 fetchEquiposStateFromDrive();
             }).catch(err => {
                 console.error("Error al actualizar equipos en Drive:", err);
-                showToast('Guardado Local', 'Se guardó en la App, pero falló la conexión con Drive.');
+                showToast('Guardado Local', 'Se guardó localmente, reintente la conexión.');
             });
         }
 
@@ -1265,8 +1417,6 @@
                 estadoGeneral = 'PREVENTIVO';
             }
 
-            const equiposInfo = equiposDatabase[currentUser.punto] || {};
-
             const payload = {
                 punto: currentUser.punto,
                 municipio: currentUser.municipio || '',
@@ -1284,11 +1434,7 @@
                 cumpleHumedad: resHum.label,
                 estadoGeneral: estadoGeneral,
                 verificado: verificado,
-                acciones: acciones || 'N/A',
-                termometroSerie: equiposInfo.termometroSerie || 'N/R',
-                termometroCalib: equiposInfo.termometroCalib || 'N/R',
-                termohigroSerie: equiposInfo.termohigroSerie || 'N/R',
-                termohigroCalib: equiposInfo.termohigroCalib || 'N/R'
+                acciones: acciones || 'N/A'
             };
 
             const newRecord = { ...payload, id: Date.now() };
@@ -1345,7 +1491,7 @@
                 if (r.estadoGeneral === 'CRÍTICO') badgeGeneral = 'bg-rose-100 text-rose-800 border-rose-300 font-bold';
 
                 const badgeVerificado = r.verificado === 'SÍ' 
-                    ? 'bg-teal-100 text-teal-800 border-teal-400 font-bold' 
+                    ? 'bg-teal-100 text-teal-400 border-teal-400 font-bold' 
                     : 'bg-slate-100 text-slate-500 border-slate-300';
 
                 return `
@@ -1389,6 +1535,88 @@
             }).join('');
         }
 
+        // FUNCIÓN DE EXPORTACIÓN EXCEL DESDE EL DASHBOARD GENERAL
+        function exportCSVFromDashboard() {
+            const selectedPunto = document.getElementById('dashFilterPunto').value;
+            let targetPuntos = [];
+
+            if (selectedPunto === "ALL") {
+                targetPuntos = PUNTOS_BD.map(p => ({
+                    punto: `${p.area} (${p.municipio})`,
+                    regente: p.regente
+                }));
+            } else {
+                const puntoFound = PUNTOS_BD.find(p => `${p.area} (${p.municipio})` === selectedPunto);
+                targetPuntos = [{
+                    punto: selectedPunto,
+                    regente: puntoFound ? puntoFound.regente : 'DESCONOCIDO'
+                }];
+            }
+
+            try {
+                const wb = XLSX.utils.book_new();
+                const currentMonthName = new Date().toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase();
+
+                const createSheetForPunto = (pObj, sheetTitle, formCode, equipmentName, valKey) => {
+                    const recordsOfPunto = allDatabaseRecords.filter(r => r.punto === pObj.punto);
+
+                    const rows = [
+                        ["MENNAR® OPERADOR LOGÍSTICO FARMACÉUTICO", "", "", "", "", "", "", "", "", "", "Código:", formCode],
+                        [sheetTitle, "", "", "", "", "", "", "", "", "", "Versión:", "2.0"],
+                        ["ESTABLECIMIENTO FARMACÉUTICO", "", "", "", "", "", "", "", "", "", "Vigencia:", "01.10.2024"],
+                        [],
+                        ["Mes:", currentMonthName, "", "Dispensario:", pObj.punto, "", "", "Equipo:", equipmentName],
+                        ["Verificador (Regente):", pObj.regente, "", "", "", "", "", "", "", "", "Ubicación:", "Área Dispensación"],
+                        [],
+                        ["Día", "Turno", "Medición Registrada", "Hora", "Zona / Ubicación", "Registrado Por (Auxiliar)", "Estado Cumplimiento", "Verificado", "Acciones Correctivas"]
+                    ];
+
+                    for (let d = 1; d <= 31; d++) {
+                        ["Mañana", "Tarde"].forEach(jornada => {
+                            const rec = recordsOfPunto.find(r => {
+                                const p = (r.fecha || "").split('/');
+                                return parseInt(p[0], 10) === d && r.jornada === jornada;
+                            });
+
+                            const val = rec ? rec[valKey] : "";
+                            rows.push([
+                                d,
+                                jornada === "Mañana" ? "M" : "T",
+                                typeof val === 'number' ? val : (val || "N/A"),
+                                rec ? rec.hora : "",
+                                rec ? rec.zona : "",
+                                rec ? (rec.auxiliar || "N/A") : "",
+                                rec ? rec.estadoGeneral : "",
+                                rec ? (rec.verificado || "NO") : "",
+                                rec ? rec.acciones : ""
+                            ]);
+                        });
+                    }
+
+                    const ws = XLSX.utils.aoa_to_sheet(rows);
+                    ws['!cols'] = [{ wch: 6 }, { wch: 6 }, { wch: 20 }, { wch: 12 }, { wch: 30 }, { wch: 25 }, { wch: 18 }, { wch: 12 }, { wch: 45 }];
+                    return ws;
+                };
+
+                targetPuntos.forEach(pObj => {
+                    const cleanPuntoName = pObj.punto.substring(0, 18).replace(/[^a-zA-Z0-9]/g, '_');
+                    XLSX.utils.book_append_sheet(wb, createSheetForPunto(pObj, 'CONTROL DE TEMPERATURA AMBIENTE', 'EF-FO-17', 'Termohigrómetro Digital', 'tempAmbiente'), `${cleanPuntoName}_TEMP`);
+                    XLSX.utils.book_append_sheet(wb, createSheetForPunto(pObj, 'CONTROL DE HUMEDAD RELATIVA', 'EF-FO-18', 'Termohigrómetro Digital', 'humedad'), `${cleanPuntoName}_HUM`);
+                    XLSX.utils.book_append_sheet(wb, createSheetForPunto(pObj, 'CONTROL DE CADENA DE FRÍO (NEVERA / CUARTO FRÍO)', 'EF-FO-19', 'Termómetro Nevera', 'tempNevera'), `${cleanPuntoName}_FRÍO`);
+                });
+
+                const suffixName = selectedPunto === "ALL" ? "Consolidado_General" : selectedPunto.replace(/[^a-zA-Z0-9]/g, '_');
+                const fileName = `EF-FO-17,18,19_Control_TH_${suffixName}.xlsx`;
+
+                XLSX.writeFile(wb, fileName);
+                showToast('Exportación Exitosa', 'El archivo Excel oficial (.xlsx) ha sido generado.');
+
+            } catch (err) {
+                console.error("Error al generar descarga:", err);
+                showToast('Error de Exportación', 'Ocurrió un error al generar la descarga.', 'error');
+            }
+        }
+
         function exportCSV() {
             const filteredRecords = allDatabaseRecords.filter(r => r.punto === currentUser.punto);
             if (filteredRecords.length === 0) {
@@ -1399,15 +1627,14 @@
             try {
                 const wb = XLSX.utils.book_new();
                 const currentMonthName = new Date().toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase();
-                const eqInfo = equiposDatabase[currentUser.punto] || {};
 
-                const createSheet = (sheetTitle, formCode, equipmentName, equipmentCode, valKey) => {
+                const createSheet = (sheetTitle, formCode, equipmentName, valKey) => {
                     const rows = [
                         ["MENNAR® OPERADOR LOGÍSTICO FARMACÉUTICO", "", "", "", "", "", "", "", "", "", "Código:", formCode],
                         [sheetTitle, "", "", "", "", "", "", "", "", "", "Versión:", "2.0"],
                         ["ESTABLECIMIENTO FARMACÉUTICO", "", "", "", "", "", "", "", "", "", "Vigencia:", "01.10.2024"],
                         [],
-                        ["Mes:", currentMonthName, "", "Dispensario:", currentUser.punto, "", "", "Equipo:", equipmentName, "", "Serie Eq:", equipmentCode],
+                        ["Mes:", currentMonthName, "", "Dispensario:", currentUser.punto, "", "", "Equipo:", equipmentName],
                         ["Verificador (Regente):", currentUser.regente, "", "", "", "", "", "", "", "", "Ubicación:", "Área Dispensación"],
                         [],
                         ["Día", "Turno", "Medición Registrada", "Hora", "Zona / Ubicación", "Registrado Por (Auxiliar)", "Estado Cumplimiento", "Verificado", "Acciones Correctivas"]
@@ -1440,9 +1667,9 @@
                     return ws;
                 };
 
-                XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE TEMPERATURA AMBIENTE', 'EF-FO-17', 'Termohigrómetro Digital', eqInfo.termohigroSerie || 'SN-N/R', 'tempAmbiente'), 'EF-FO-17. TEMPERATURA');
-                XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE HUMEDAD RELATIVA', 'EF-FO-18', 'Termohigrómetro Digital', eqInfo.termohigroSerie || 'SN-N/R', 'humedad'), 'EF-FO-18. HUMEDAD');
-                XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE CADENA DE FRÍO (NEVERA / CUARTO FRÍO)', 'EF-FO-19', 'Termómetro Nevera', eqInfo.termometroSerie || 'SN-N/R', 'tempNevera'), 'EF-FO-19. CADENA DE FRÍO');
+                XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE TEMPERATURA AMBIENTE', 'EF-FO-17', 'Termohigrómetro Digital', 'tempAmbiente'), 'EF-FO-17. TEMPERATURA');
+                XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE HUMEDAD RELATIVA', 'EF-FO-18', 'Termohigrómetro Digital', 'humedad'), 'EF-FO-18. HUMEDAD');
+                XLSX.utils.book_append_sheet(wb, createSheet('CONTROL DE CADENA DE FRÍO (NEVERA / CUARTO FRÍO)', 'EF-FO-19', 'Termómetro Nevera', 'tempNevera'), 'EF-FO-19. CADENA DE FRÍO');
 
                 const cleanPunto = currentUser.punto.replace(/[^a-zA-Z0-9]/g, '_');
                 const fileName = `EF-FO-17,18,19_Control_TH_${cleanPunto}.xlsx`;
@@ -1453,6 +1680,16 @@
             } catch (err) {
                 console.error("Error al generar descarga:", err);
                 showToast('Error de Exportación', 'Ocurrió un error al generar la descarga.', 'error');
+            }
+        }
+
+        function clearPuntoData() {
+            if (!currentUser) return;
+            if (confirm(`¿Está seguro de borrar los registros locales del punto ${currentUser.punto}?`)) {
+                allDatabaseRecords = allDatabaseRecords.filter(r => r.punto !== currentUser.punto);
+                localStorage.setItem('mennar_farmacia_records', JSON.stringify(allDatabaseRecords));
+                renderTableRecords();
+                showToast('Limpieza Completada', 'Registros locales eliminados de la app.');
             }
         }
 
